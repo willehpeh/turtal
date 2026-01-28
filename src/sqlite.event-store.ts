@@ -38,7 +38,7 @@ export class SqliteEventStore extends EventStore {
     return Promise.resolve();
   }
 
-  events(query: EventQuery = EMPTY_EVENT_QUERY): Promise<SequencedEvent[]> {
+  events(_query: EventQuery = EMPTY_EVENT_QUERY): Promise<SequencedEvent[]> {
     const rows = this.db.prepare('SELECT position, type, payload, tags FROM events').all() as {
       position: number;
       type: string;
