@@ -156,4 +156,35 @@ describe('SQLite Event Store', () => {
     await expect(shouldFail).rejects.toThrowError();
   });
 
+  it('should append if events exist with some but not all of the provided tags', async () => {
+    const event: DomainEvent = {
+      type: 'TestEvent',
+      payload: {
+        foo: 'bar',
+      },
+      tags: [
+        'user:test',
+        'test:123',
+      ]
+    };
+    await store.append([event]);
+    const newEvent: DomainEvent = {
+      type: 'TestEvent2',
+      payload: {
+        buzz: 'bizz',
+      },
+      tags: [
+        'user:test',
+        'test:456',
+      ]
+    };
+    const appendCondition = AppendCondition.forQuery(new EventQuery().forTags('test:123', 'other-test-456'));
+    await store.append([newEvent], appendCondition);
+    const events = await store.events();
+    expect(events).toEqual([
+      { ...event, position: 1 },
+      { ...newEvent, position: 2 },
+    ]);
+  });
+
 });
