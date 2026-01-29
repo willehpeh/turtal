@@ -1,4 +1,4 @@
-import type { Database } from 'better-sqlite3';
+import type { Database, Transaction } from 'better-sqlite3';
 import { EventStore } from './event-store';
 import { AppendCondition } from './append-condition';
 import { EventQuery } from './event-query';
@@ -25,17 +25,19 @@ export class SqliteEventStore extends EventStore {
   }
 
   append(events: DomainEvent[], _appendCondition: AppendCondition = { failIfMatch: EMPTY_EVENT_QUERY }): Promise<void> {
-    const insert = this.db.prepare('INSERT INTO events (type, payload, tags) VALUES (?, ?, ?)');
-
-    const insertAll = this.db.transaction((events: DomainEvent[]) => {
-      for (const event of events) {
-        insert.run(event.type, JSON.stringify(event.payload), JSON.stringify(event.tags));
-      }
-    });
-
+    const insertAll = this.appendTransaction();
     insertAll(events);
 
     return Promise.resolve();
+  }
+
+  private appendTransaction(): Transaction<(events: DomainEvent[]) => void> {
+    return this.db.transaction((events: DomainEvent[]) => {
+      events.forEach((event) => {
+        const insert = this.db.prepare<[string, string, string], void>('INSERT INTO events (type, payload, tags) VALUES (?, ?, ?)');
+        insert.run(event.type, JSON.stringify(event.payload), JSON.stringify(event.tags));
+      });
+    });
   }
 
   events(_query: EventQuery = EMPTY_EVENT_QUERY): Promise<SequencedEvent[]> {
