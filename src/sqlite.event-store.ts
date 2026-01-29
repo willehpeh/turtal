@@ -4,6 +4,7 @@ import { AppendCondition } from './append-condition';
 import { EventQuery } from './event-query';
 import { SequencedEvent } from './sequenced-event';
 import { DomainEvent } from './domain-event';
+import { SqliteEvent } from './sqlite-event';
 
 export class SqliteEventStore extends EventStore {
   constructor(private readonly db: Database) {
@@ -15,30 +16,15 @@ export class SqliteEventStore extends EventStore {
     if (this.appendConditionShouldFail(appendCondition)) {
       return Promise.reject();
     }
-    const insertAll = this.appendTransaction();
-    insertAll(events);
+    const insertAllTransaction = this.appendTransaction();
+    insertAllTransaction(events);
 
     return Promise.resolve();
   }
 
   events(_query: EventQuery = new EventQuery()): Promise<SequencedEvent[]> {
-    //language=SQLite
-    const sql = `
-        SELECT e.position, e.type, e.payload, GROUP_CONCAT(t.tag) as tags
-        FROM events e
-        LEFT JOIN event_tags t ON e.position = t.event_position
-        GROUP BY e.position
-        ORDER BY e.position
-    `;
-    const rows = this.db.prepare(sql).all() as {
-      position: number;
-      type: string;
-      payload: string;
-      tags: string | null;
-    }[];
-
     return Promise.resolve(
-      rows.map((row) => ({
+      this.eventDbRows().map((row) => ({
         position: row.position,
         type: row.type,
         payload: JSON.parse(row.payload),
@@ -47,18 +33,27 @@ export class SqliteEventStore extends EventStore {
     );
   }
 
+  private eventDbRows(): SqliteEvent[] {
+    return this.db
+      .prepare(`
+          SELECT e.position, e.type, e.payload, GROUP_CONCAT(t.tag) as tags
+          FROM events e
+                   LEFT JOIN event_tags t ON e.position = t.event_position
+          GROUP BY e.position
+          ORDER BY e.position
+      `)
+      .all() as SqliteEvent[];
+  }
+
   private appendConditionShouldFail(appendCondition: AppendCondition) {
     if (appendCondition.isEmpty()) {
       return false;
     }
-
-    const sql = `
+    return this.db.prepare(`
         SELECT 1
-        FROM events
-        ${this.buildWhereClause(appendCondition)}
+        FROM events ${ this.buildWhereClause(appendCondition) }
         LIMIT 1
-    `;
-    return this.db.prepare(sql).get();
+    `).get();
   }
 
   private buildWhereClause(condition: AppendCondition): string {
@@ -76,17 +71,17 @@ export class SqliteEventStore extends EventStore {
       return '';
     }
 
-    return `WHERE ${clauses.join(' AND ')}`;
+    return `WHERE ${ clauses.join(' AND ') }`;
   }
 
   private typesClause(types: string[]): string {
-    const quoted = types.map(type => `'${type}'`).join(',');
-    return `type IN (${quoted})`;
+    const quoted = types.map(type => `'${ type }'`).join(',');
+    return `type IN (${ quoted })`;
   }
 
   private tagsClause(tags: string[]): string {
     return tags
-      .map(tag => `EXISTS (SELECT 1 FROM event_tags WHERE event_position = events.position AND tag = '${tag}')`)
+      .map(tag => `EXISTS (SELECT 1 FROM event_tags WHERE event_position = events.position AND tag = '${ tag }')`)
       .join(' AND ');
   }
 
