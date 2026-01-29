@@ -63,7 +63,8 @@ export class SqliteEventStore extends EventStore {
             type     TEXT NOT NULL,
             payload  JSON NOT NULL,
             tags     TEXT NOT NULL
-        )
+        );
+        CREATE INDEX IF NOT EXISTS idx_events_type ON events (type);
     `);
   }
 
