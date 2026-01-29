@@ -22,6 +22,7 @@ export class SqliteEventStore extends EventStore {
   }
 
   events(_query: EventQuery = new EventQuery()): Promise<SequencedEvent[]> {
+    //language=SQLite
     const sql = `
         SELECT e.position, e.type, e.payload, GROUP_CONCAT(t.tag) as tags
         FROM events e
