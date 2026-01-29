@@ -15,10 +15,6 @@ export class AppendCondition {
     return new AppendCondition(query.types, query.tags);
   }
 
-  after(position: number): AppendCondition {
-    return new AppendCondition(this._types, this._tags, position);
-  }
-
   isEmpty(): boolean {
     return this._types.length === 0 && this._tags.length === 0;
   }
