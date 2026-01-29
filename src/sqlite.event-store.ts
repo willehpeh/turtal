@@ -69,7 +69,7 @@ export class SqliteEventStore extends EventStore {
 
   private appendTransaction(): Transaction<(events: DomainEvent[]) => void> {
     return this.db.transaction((events: DomainEvent[]) => {
-      const insert = this.db.prepare<[string, string, string], void>('INSERT INTO events (type, payload, tags) VALUES (?, ?, ?)');
+      const insert = this.db.prepare<[string, string, string]>('INSERT INTO events (type, payload, tags) VALUES (?, ?, ?)');
       events.forEach((event) => {
         insert.run(event.type, JSON.stringify(event.payload), JSON.stringify(event.tags));
       });
