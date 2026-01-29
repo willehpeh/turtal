@@ -3,9 +3,6 @@ export class EventQuery {
   private _types: string[] = [];
   private _tags: string[] = [];
 
-  constructor() {
-  }
-
   types(): string[] {
     return this._types.slice();
   }
@@ -16,6 +13,11 @@ export class EventQuery {
 
   forTypes(...types: string[]): EventQuery {
     this._types.push(...types);
+    return this;
+  }
+
+  forTags(...tags: string[]): EventQuery {
+    this._tags.push(...tags);
     return this;
   }
 }
