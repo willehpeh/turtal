@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import { SqliteEventStore } from '../../src/sqlite.event-store';
 import { DomainEvent } from '../../src/domain-event';
 import { AppendCondition } from '../../src/append-condition';
+import { EventQuery } from '../../src/event-query';
 
 describe('SQLite Event Store', () => {
   let db: Database.Database;
@@ -84,7 +85,7 @@ describe('SQLite Event Store', () => {
         'user:test',
       ]
     };
-    const appendCondition = AppendCondition.forQuery({ types: ['TestEvent'], tags: [] })
+    const appendCondition = AppendCondition.forQuery(new EventQuery().forTypes('TestEvent'))
     const shouldFail = store.append([shouldFailEvent], appendCondition);
     await expect(shouldFail).rejects.toThrowError();
   });
@@ -99,7 +100,7 @@ describe('SQLite Event Store', () => {
         'user:test',
       ]
     };
-    const appendCondition = AppendCondition.forQuery({ types: ['TestEventDoesNotExist'], tags: [] })
+    const appendCondition = AppendCondition.forQuery(new EventQuery().forTypes('TestEventDoesNotExist'))
     const shouldNotFail = store.append([event], appendCondition);
 
     await expect(shouldNotFail).resolves.not.toThrowError();
@@ -123,7 +124,7 @@ describe('SQLite Event Store', () => {
       },
       tags: []
     };
-    const appendCondition = AppendCondition.forQuery({ types: ['RandomTestEvent', 'TestEvent'], tags: [] })
+    const appendCondition = AppendCondition.forQuery(new EventQuery().forTypes('RandomTestEvent', 'TestEvent'))
     const shouldFail = store.append([event, shouldFailEvent], appendCondition);
     await expect(shouldFail).rejects.toThrowError();
   })

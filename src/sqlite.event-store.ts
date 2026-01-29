@@ -3,7 +3,6 @@ import { EventStore } from './event-store';
 import { AppendCondition } from './append-condition';
 import { EventQuery } from './event-query';
 import { SequencedEvent } from './sequenced-event';
-import { EMPTY_EVENT_QUERY } from './empty.event-query';
 import { DomainEvent } from './domain-event';
 
 export class SqliteEventStore extends EventStore {
@@ -22,7 +21,7 @@ export class SqliteEventStore extends EventStore {
     return Promise.resolve();
   }
 
-  events(_query: EventQuery = EMPTY_EVENT_QUERY): Promise<SequencedEvent[]> {
+  events(_query: EventQuery = new EventQuery()): Promise<SequencedEvent[]> {
     const rows = this.db.prepare('SELECT position, type, payload, tags FROM events').all() as {
       position: number;
       type: string;

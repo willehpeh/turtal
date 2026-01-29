@@ -2,9 +2,13 @@ import { EventQuery } from './event-query';
 
 export class AppendCondition {
 
-  private constructor(private readonly _types: string[] = [],
-                      private readonly _tags: string[] = [],
+  private readonly _types: string[];
+  private readonly _tags: string[];
+
+  private constructor(query: EventQuery = new EventQuery(),
                       private readonly _after = 0) {
+    this._types = query.types();
+    this._tags = query.tags();
   }
 
   static empty(): AppendCondition {
@@ -12,7 +16,7 @@ export class AppendCondition {
   }
 
   static forQuery(query: EventQuery): AppendCondition {
-    return new AppendCondition(query.types, query.tags);
+    return new AppendCondition(query);
   }
 
   isEmpty(): boolean {
