@@ -102,4 +102,26 @@ describe('SQLite Event Store', () => {
     expect(shouldNotFail).resolves.not.toThrowError();
   });
 
+  it('should fail to append if at least one event type matches', async () => {
+    const event: DomainEvent = {
+      type: 'TestEvent',
+      payload: {
+        foo: 'bar',
+      },
+      tags: [
+        'user:test',
+      ]
+    };
+    await store.append([event]);
+    const shouldFailEvent: DomainEvent = {
+      type: 'TestEvent1',
+      payload: {
+        foo: 'bar',
+      },
+      tags: []
+    };
+    const shouldFail = store.append([event, shouldFailEvent], { failIfMatch: { types: ['RandomTestEvent', 'TestEvent'], tags: [] } });
+    expect(shouldFail).rejects.toThrowError();
+  })
+
 });
