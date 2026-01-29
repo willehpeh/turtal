@@ -30,8 +30,6 @@ export class SqliteEventStore extends EventStore {
         GROUP BY e.position
         ORDER BY e.position
     `;
-    // Note: tags are returned in arbitrary order. If insertion order matters,
-    // add a sequence column to event_tags.
     const rows = this.db.prepare(sql).all() as {
       position: number;
       type: string;
