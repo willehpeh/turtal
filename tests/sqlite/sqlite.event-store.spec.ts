@@ -86,8 +86,7 @@ describe('SQLite Event Store', () => {
       ]
     };
     const appendCondition = AppendCondition.forQuery(new EventQuery().forTypes('TestEvent'))
-    const shouldFail = store.append([shouldFailEvent], appendCondition);
-    await expect(shouldFail).rejects.toThrowError();
+    await expect(store.append([shouldFailEvent], appendCondition)).rejects.toThrowError();
   });
 
   it('should not fail to append if the event type does not exist', async () => {
@@ -101,9 +100,7 @@ describe('SQLite Event Store', () => {
       ]
     };
     const appendCondition = AppendCondition.forQuery(new EventQuery().forTypes('TestEventDoesNotExist'))
-    const shouldNotFail = store.append([event], appendCondition);
-
-    await expect(shouldNotFail).resolves.not.toThrowError();
+    await expect(store.append([event], appendCondition)).resolves.not.toThrowError();
   });
 
   it('should fail to append if at least one event type matches', async () => {
@@ -125,8 +122,7 @@ describe('SQLite Event Store', () => {
       tags: []
     };
     const appendCondition = AppendCondition.forQuery(new EventQuery().forTypes('RandomTestEvent', 'TestEvent'))
-    const shouldFail = store.append([event, shouldFailEvent], appendCondition);
-    await expect(shouldFail).rejects.toThrowError();
+    await expect(store.append([event, shouldFailEvent], appendCondition)).rejects.toThrowError();
   });
 
   it('should fail to append if there is at least one event with ALL OF the provided tags and no position provided', async () => {
@@ -152,8 +148,7 @@ describe('SQLite Event Store', () => {
       ]
     };
     const appendCondition = AppendCondition.forQuery(new EventQuery().forTags('test:123', 'user:test'));
-    const shouldFail = store.append([newEvent], appendCondition);
-    await expect(shouldFail).rejects.toThrowError();
+    await expect(store.append([newEvent], appendCondition)).rejects.toThrowError();
   });
 
   it('should append if events exist with some but not all of the provided tags', async () => {
