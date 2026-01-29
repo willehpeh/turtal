@@ -22,11 +22,20 @@ export class SqliteEventStore extends EventStore {
   }
 
   events(_query: EventQuery = new EventQuery()): Promise<SequencedEvent[]> {
-    const rows = this.db.prepare('SELECT position, type, payload, tags FROM events').all() as {
+    const sql = `
+        SELECT e.position, e.type, e.payload, GROUP_CONCAT(t.tag) as tags
+        FROM events e
+        LEFT JOIN event_tags t ON e.position = t.event_position
+        GROUP BY e.position
+        ORDER BY e.position
+    `;
+    // Note: tags are returned in arbitrary order. If insertion order matters,
+    // add a sequence column to event_tags.
+    const rows = this.db.prepare(sql).all() as {
       position: number;
       type: string;
       payload: string;
-      tags: string;
+      tags: string | null;
     }[];
 
     return Promise.resolve(
@@ -34,7 +43,7 @@ export class SqliteEventStore extends EventStore {
         position: row.position,
         type: row.type,
         payload: JSON.parse(row.payload),
-        tags: JSON.parse(row.tags),
+        tags: row.tags ? row.tags.split(',') : [],
       }))
     );
   }
@@ -78,7 +87,7 @@ export class SqliteEventStore extends EventStore {
 
   private tagsClause(tags: string[]): string {
     return tags
-      .map(tag => `EXISTS (SELECT 1 FROM json_each(tags) WHERE value = '${tag}')`)
+      .map(tag => `EXISTS (SELECT 1 FROM event_tags WHERE event_position = events.position AND tag = '${tag}')`)
       .join(' AND ');
   }
 
@@ -89,18 +98,33 @@ export class SqliteEventStore extends EventStore {
         (
             position INTEGER PRIMARY KEY AUTOINCREMENT,
             type     TEXT NOT NULL,
-            payload  JSON NOT NULL,
-            tags     TEXT NOT NULL
+            payload  JSON NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_events_type ON events (type);
+
+        CREATE TABLE IF NOT EXISTS event_tags
+        (
+            event_position INTEGER NOT NULL,
+            tag            TEXT    NOT NULL,
+            PRIMARY KEY (event_position, tag),
+            FOREIGN KEY (event_position) REFERENCES events (position)
+        );
+        CREATE INDEX IF NOT EXISTS idx_event_tags_tag ON event_tags (tag);
     `);
   }
 
   private appendTransaction(): Transaction<(events: DomainEvent[]) => void> {
     return this.db.transaction((events: DomainEvent[]) => {
-      const insert = this.db.prepare<[string, string, string]>('INSERT INTO events (type, payload, tags) VALUES (?, ?, ?)');
+      const insertEvent = this.db.prepare<[string, string]>('INSERT INTO events (type, payload) VALUES (?, ?)');
+      const insertTag = this.db.prepare<[number, string]>('INSERT INTO event_tags (event_position, tag) VALUES (?, ?)');
+
       events.forEach((event) => {
-        insert.run(event.type, JSON.stringify(event.payload), JSON.stringify(event.tags));
+        const result = insertEvent.run(event.type, JSON.stringify(event.payload));
+        const position = result.lastInsertRowid as number;
+
+        for (const tag of event.tags) {
+          insertTag.run(position, tag);
+        }
       });
     });
   }

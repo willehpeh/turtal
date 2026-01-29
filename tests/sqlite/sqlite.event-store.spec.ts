@@ -3,6 +3,15 @@ import { SqliteEventStore } from '../../src/sqlite.event-store';
 import { DomainEvent } from '../../src/domain-event';
 import { AppendCondition } from '../../src/append-condition';
 import { EventQuery } from '../../src/event-query';
+import { SequencedEvent } from '../../src/sequenced-event';
+
+function sortTags<T extends { tags: string[] }>(event: T): T {
+  return { ...event, tags: [...event.tags].sort() };
+}
+
+function expectEventsEqual(actual: SequencedEvent[], expected: SequencedEvent[]) {
+  expect(actual.map(sortTags)).toEqual(expected.map(sortTags));
+}
 
 describe('SQLite Event Store', () => {
   let db: Database.Database;
@@ -33,7 +42,7 @@ describe('SQLite Event Store', () => {
     await store.append([event]);
 
     const events = await store.events();
-    expect(events).toEqual([{ ...event, position: 1 }]);
+    expectEventsEqual(events, [{ ...event, position: 1 }]);
   });
 
   it('should append multiple events', async () => {
@@ -176,7 +185,7 @@ describe('SQLite Event Store', () => {
     const appendCondition = AppendCondition.forQuery(new EventQuery().forTags('test:123', 'other-test-456'));
     await store.append([newEvent], appendCondition);
     const events = await store.events();
-    expect(events).toEqual([
+    expectEventsEqual(events, [
       { ...event, position: 1 },
       { ...newEvent, position: 2 },
     ]);
@@ -207,7 +216,7 @@ describe('SQLite Event Store', () => {
     );
     await store.append([newEvent], appendCondition);
     const events = await store.events();
-    expect(events).toEqual([
+    expectEventsEqual(events, [
       { ...event, position: 1 },
       { ...newEvent, position: 2 },
     ]);
