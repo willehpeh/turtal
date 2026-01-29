@@ -12,7 +12,7 @@ export class SqliteEventStore extends EventStore {
     this.ensureSchema();
   }
 
-  append(events: DomainEvent[], appendCondition: AppendCondition = { failIfMatch: EMPTY_EVENT_QUERY }): Promise<void> {
+  append(events: DomainEvent[], appendCondition: AppendCondition = AppendCondition.empty()): Promise<void> {
     if (this.appendConditionShouldFail(appendCondition)) {
       return Promise.reject();
     }
@@ -41,14 +41,13 @@ export class SqliteEventStore extends EventStore {
   }
 
   private appendConditionShouldFail(appendCondition: AppendCondition) {
-    if (appendCondition.failIfMatch.types.length === 0) {
+    if (appendCondition.isEmpty()) {
       return false;
     }
-    const conditionTypes = appendCondition.failIfMatch.types.map((type) => `'${ type }'`).join(',');
     const sql = `
         SELECT 1
         FROM events
-        WHERE type IN (${ conditionTypes })
+        WHERE type IN (${ appendCondition.typesAsString() })
         LIMIT 1
     `;
     return this.db.prepare(sql).get();
