@@ -85,6 +85,21 @@ describe('SQLite Event Store', () => {
     };
     const shouldFail = store.append([shouldFailEvent], { failIfMatch: { types: ['TestEvent'], tags: [] } });
     expect(shouldFail).rejects.toThrowError();
-  })
+  });
+
+  it('should not fail to append if the event type does not exist', async () => {
+    const event: DomainEvent = {
+      type: 'TestEvent',
+      payload: {
+        foo: 'bar',
+      },
+      tags: [
+        'user:test',
+      ]
+    };
+    const shouldNotFail = store.append([event], { failIfMatch: { types: ['TestEventDoesNotExist'], tags: [] } });
+
+    expect(shouldNotFail).resolves.not.toThrowError();
+  });
 
 });
