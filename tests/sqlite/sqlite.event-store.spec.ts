@@ -187,4 +187,61 @@ describe('SQLite Event Store', () => {
     ]);
   });
 
+  it('should append if an existing event matches all tags but not the type', async () => {
+    const event: DomainEvent = {
+      type: 'TestEvent',
+      payload: {
+        foo: 'bar',
+      },
+      tags: [
+        'user:test',
+        'test:123',
+      ]
+    };
+    await store.append([event]);
+    const newEvent: DomainEvent = {
+      type: 'TestEvent2',
+      payload: {
+        buzz: 'bizz',
+      },
+      tags: []
+    };
+    const appendCondition = AppendCondition.forQuery(new EventQuery()
+      .forTags('user:test', 'test:123')
+      .forTypes('NotTestEvent')
+    );
+    await store.append([newEvent], appendCondition);
+    const events = await store.events();
+    expect(events).toEqual([
+      { ...event, position: 1 },
+      { ...newEvent, position: 2 },
+    ]);
+  });
+
+  it('should fail to append if an existing event matches all tags and at least one type', async () => {
+    const event: DomainEvent = {
+      type: 'TestEvent',
+      payload: {
+        foo: 'bar',
+      },
+      tags: [
+        'user:test',
+        'test:123',
+      ]
+    };
+    await store.append([event]);
+    const newEvent: DomainEvent = {
+      type: 'TestEvent',
+      payload: {
+        buzz: 'bizz',
+      },
+      tags: []
+    };
+    const appendCondition = AppendCondition.forQuery(new EventQuery()
+      .forTags('user:test', 'test:123')
+      .forTypes('TestEvent', 'RandomEvent')
+    );
+    await expect(store.append([newEvent], appendCondition)).rejects.toThrowError();
+  })
+
 });
