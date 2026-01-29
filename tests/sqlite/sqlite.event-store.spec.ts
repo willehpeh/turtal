@@ -34,4 +34,57 @@ describe('SQLite Event Store', () => {
     expect(events).toEqual([{ ...event, position: 1 }]);
   });
 
+  it('should append multiple events', async () => {
+    const newEvents: DomainEvent[] = [
+      {
+        type: 'TestEvent1',
+        payload: {
+          foo: 'bar',
+        },
+        tags: [
+          'user:test',
+        ]
+      },
+      {
+        type: 'TestEvent2',
+        payload: {
+          buzz: 'bizz',
+        },
+        tags: [
+          'test:123',
+        ] },
+    ];
+    await store.append(newEvents);
+
+    const events = await store.events();
+    expect(events).toEqual([
+      { ...events[0], position: 1 },
+      { ...events[1], position: 2 },
+    ]);
+  });
+
+  it('should fail to append if the event type already exists', async () => {
+    const event: DomainEvent = {
+      type: 'TestEvent',
+      payload: {
+        foo: 'bar',
+      },
+      tags: [
+        'user:test',
+      ]
+    };
+    await store.append([event]);
+    const shouldFailEvent: DomainEvent = {
+      type: 'TestEvent',
+      payload: {
+        foo: 'bar',
+      },
+      tags: [
+        'user:test',
+      ]
+    };
+    const shouldFail = store.append([shouldFailEvent], { failIfMatch: { types: ['TestEvent'], tags: [] } });
+    expect(shouldFail).rejects.toThrowError();
+  })
+
 });

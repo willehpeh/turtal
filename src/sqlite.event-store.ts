@@ -12,32 +12,14 @@ export class SqliteEventStore extends EventStore {
     this.ensureSchema();
   }
 
-  private ensureSchema(): void {
-    // language=SQLite
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS events (
-        position INTEGER PRIMARY KEY AUTOINCREMENT,
-        type TEXT NOT NULL,
-        payload JSON NOT NULL,
-        tags TEXT NOT NULL
-      )
-    `);
-  }
-
-  append(events: DomainEvent[], _appendCondition: AppendCondition = { failIfMatch: EMPTY_EVENT_QUERY }): Promise<void> {
+  append(events: DomainEvent[], appendCondition: AppendCondition = { failIfMatch: EMPTY_EVENT_QUERY }): Promise<void> {
+    if (this.appendConditionShouldFail(appendCondition)) {
+      return Promise.reject();
+    }
     const insertAll = this.appendTransaction();
     insertAll(events);
 
     return Promise.resolve();
-  }
-
-  private appendTransaction(): Transaction<(events: DomainEvent[]) => void> {
-    return this.db.transaction((events: DomainEvent[]) => {
-      events.forEach((event) => {
-        const insert = this.db.prepare<[string, string, string], void>('INSERT INTO events (type, payload, tags) VALUES (?, ?, ?)');
-        insert.run(event.type, JSON.stringify(event.payload), JSON.stringify(event.tags));
-      });
-    });
   }
 
   events(_query: EventQuery = EMPTY_EVENT_QUERY): Promise<SequencedEvent[]> {
@@ -56,5 +38,41 @@ export class SqliteEventStore extends EventStore {
         tags: JSON.parse(row.tags),
       }))
     );
+  }
+
+  private appendConditionShouldFail(appendCondition: AppendCondition) {
+    if (appendCondition.failIfMatch.types.length === 0) {
+      return false;
+    }
+    const conditionTypes = appendCondition.failIfMatch.types.map((type) => `'${ type }'`).join(',');
+    const sql = `
+        SELECT 1
+        FROM events
+        WHERE type IN (${ conditionTypes })
+        LIMIT 1
+    `;
+    return this.db.prepare(sql).get();
+  }
+
+  private ensureSchema(): void {
+    // language=SQLite
+    this.db.exec(`
+        CREATE TABLE IF NOT EXISTS events
+        (
+            position INTEGER PRIMARY KEY AUTOINCREMENT,
+            type     TEXT NOT NULL,
+            payload  JSON NOT NULL,
+            tags     TEXT NOT NULL
+        )
+    `);
+  }
+
+  private appendTransaction(): Transaction<(events: DomainEvent[]) => void> {
+    return this.db.transaction((events: DomainEvent[]) => {
+      const insert = this.db.prepare<[string, string, string], void>('INSERT INTO events (type, payload, tags) VALUES (?, ?, ?)');
+      events.forEach((event) => {
+        insert.run(event.type, JSON.stringify(event.payload), JSON.stringify(event.tags));
+      });
+    });
   }
 }
