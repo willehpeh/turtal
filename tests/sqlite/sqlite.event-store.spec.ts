@@ -127,6 +127,33 @@ describe('SQLite Event Store', () => {
     const appendCondition = AppendCondition.forQuery(new EventQuery().forTypes('RandomTestEvent', 'TestEvent'))
     const shouldFail = store.append([event, shouldFailEvent], appendCondition);
     await expect(shouldFail).rejects.toThrowError();
-  })
+  });
+
+  it('should fail to append if there is at least one event with ALL OF the provided tags and no position provided', async () => {
+    const event: DomainEvent = {
+      type: 'TestEvent',
+      payload: {
+        foo: 'bar',
+      },
+      tags: [
+        'user:test',
+        'test:123',
+      ]
+    };
+    await store.append([event]);
+    const newEvent: DomainEvent = {
+      type: 'TestEvent2',
+      payload: {
+        buzz: 'bizz',
+      },
+      tags: [
+        'user:test',
+        'test:456',
+      ]
+    };
+    const appendCondition = AppendCondition.forQuery(new EventQuery().forTags('test:123', 'user:test'));
+    const shouldFail = store.append([newEvent], appendCondition);
+    await expect(shouldFail).rejects.toThrowError();
+  });
 
 });

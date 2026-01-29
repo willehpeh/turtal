@@ -23,8 +23,12 @@ export class AppendCondition {
     return this._types.length === 0 && this._tags.length === 0;
   }
 
-  typesAsString(): string {
-    return this._types.map(type => `'${ type }'`).join(',');
+  types(): string[] {
+    return this._types.slice();
+  }
+
+  tags(): string[] {
+    return this._tags.slice();
   }
 
 }

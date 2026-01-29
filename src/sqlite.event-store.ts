@@ -43,13 +43,43 @@ export class SqliteEventStore extends EventStore {
     if (appendCondition.isEmpty()) {
       return false;
     }
+
     const sql = `
         SELECT 1
         FROM events
-        WHERE type IN (${ appendCondition.typesAsString() })
+        ${this.buildWhereClause(appendCondition)}
         LIMIT 1
     `;
     return this.db.prepare(sql).get();
+  }
+
+  private buildWhereClause(condition: AppendCondition): string {
+    const clauses: string[] = [];
+
+    if (condition.types().length > 0) {
+      clauses.push(this.typesClause(condition.types()));
+    }
+
+    if (condition.tags().length > 0) {
+      clauses.push(this.tagsClause(condition.tags()));
+    }
+
+    if (clauses.length === 0) {
+      return '';
+    }
+
+    return `WHERE ${clauses.join(' AND ')}`;
+  }
+
+  private typesClause(types: string[]): string {
+    const quoted = types.map(type => `'${type}'`).join(',');
+    return `type IN (${quoted})`;
+  }
+
+  private tagsClause(tags: string[]): string {
+    return tags
+      .map(tag => `EXISTS (SELECT 1 FROM json_each(tags) WHERE value = '${tag}')`)
+      .join(' AND ');
   }
 
   private ensureSchema(): void {
