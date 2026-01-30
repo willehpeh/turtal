@@ -332,6 +332,55 @@ describe('SQLite Event Store', () => {
       { ...storedEvents[0], position: 1 },
       { ...storedEvents[2], position: 3 },
     ]);
-  })
+  });
+
+  it('should only return events that match the tags and types in the query', async () => {
+    const storedEvents: DomainEvent[] = [
+      {
+        type: 'TestEvent',
+        payload: {
+          foo: 'bar',
+        },
+        tags: [
+          'user:test',
+          'test:123',
+        ]
+      },
+      {
+        type: 'TestEvent',
+        payload: {
+          buzz: 'bizz',
+        },
+        tags: []
+      },
+      {
+        type: 'TestEvent',
+        payload: {
+          foo: 'bazz',
+        },
+        tags: [
+          'user:test',
+          'test:443',
+        ]
+      },
+      {
+        type: 'TestEvent',
+        payload: {
+          foo: 'bazz',
+        },
+        tags: [
+          'user:test',
+          'test:123',
+        ]
+      }
+    ];
+    await store.append(storedEvents);
+    const query = new EventQuery().forTypes('TestEvent').forTags('user:test', 'test:123');
+    const events = await store.events(query);
+    expectEventsEqual(events, [
+      { ...storedEvents[0], position: 1 },
+      { ...storedEvents[3], position: 4 },
+    ]);
+  });
 
 });
