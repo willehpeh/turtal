@@ -18,7 +18,7 @@ export class SqliteEventStore extends EventStore {
 
   append(events: DomainEvent[], appendCondition: AppendCondition = AppendCondition.empty()): Promise<void> {
     if (this.appendConditionShouldFail(appendCondition)) {
-      return Promise.reject();
+      return Promise.reject(new Error('Concurrency error: append condition failed.'));
     }
     const insertAllTransaction = this.appendTransaction();
     insertAllTransaction(events);

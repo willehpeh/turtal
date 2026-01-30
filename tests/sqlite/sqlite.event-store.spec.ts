@@ -383,4 +383,46 @@ describe('SQLite Event Store', () => {
     ]);
   });
 
+  it('should append if no event exists after the latest observed position', async () => {
+    const storedEvents: DomainEvent[] = [
+      {
+        type: 'TestEvent',
+        payload: {
+          foo: 'bar',
+        },
+        tags: [
+          'user:test',
+          'test:123',
+        ]
+      },
+      {
+        type: 'TestEvent',
+        payload: {
+          foo: 'buzz',
+        },
+        tags: [
+          'user:test',
+          'test:345',
+        ]
+      },
+    ];
+    await store.append(storedEvents);
+    const query = new EventQuery().forTypes('TestEvent').forTags('user:test');
+    const appendCondition = AppendCondition.forQuery(query).after(2);
+    const newEvent: DomainEvent = {
+      type: 'TestEvent',
+      payload: {
+        buzz: 'bizz',
+      },
+      tags: []
+    };
+    await store.append([newEvent], appendCondition);
+    const events = await store.events();
+    expectEventsEqual(events, [
+      { ...storedEvents[0], position: 1 },
+      { ...storedEvents[1], position: 2 },
+      { ...newEvent, position: 3 },
+    ])
+  });
+
 });

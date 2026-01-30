@@ -5,7 +5,7 @@ export class AppendCondition {
 
   private constructor(
     private readonly query: EventQuery = new EventQuery(),
-    private readonly _after = 0
+    private _after = 0
   ) {}
 
   static empty(): AppendCondition {
@@ -21,7 +21,19 @@ export class AppendCondition {
   }
 
   whereClause(dialect: SqlDialect, tableName: string): string {
-    return this.query.whereClause(dialect, tableName);
+    const queryClause = this.query.whereClause(dialect, tableName);
+    if (this._after === 0) {
+      return queryClause;
+    }
+    const positionClause = dialect.positionAfterClause(this._after, tableName);
+    if (queryClause === '') {
+      return `WHERE ${positionClause}`;
+    }
+    return `${queryClause} AND ${positionClause}`;
   }
 
+  after(position: number): AppendCondition {
+    this._after = position;
+    return this;
+  }
 }

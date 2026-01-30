@@ -11,4 +11,8 @@ export class SqliteDialect implements SqlDialect {
       .map(tag => `EXISTS (SELECT 1 FROM event_tags WHERE event_position = ${tableName}.position AND tag = '${tag}')`)
       .join(' AND ');
   }
+
+  positionAfterClause(position: number, tableName: string): string {
+    return `${tableName}.position > ${position}`;
+  }
 }
