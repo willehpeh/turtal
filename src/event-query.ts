@@ -23,7 +23,7 @@ export class EventQuery {
     return this;
   }
 
-  toWhereClause(dialect: SqlDialect, tableName: string): string {
+  whereClause(dialect: SqlDialect, tableName: string): string {
     const clauses: string[] = [];
 
     if (this._types.length > 0) {

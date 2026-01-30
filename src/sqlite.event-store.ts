@@ -38,30 +38,36 @@ export class SqliteEventStore extends EventStore {
   }
 
   private eventDbRows(query: EventQuery): SqliteEvent[] {
-    const whereClause = query.toWhereClause(this.dialect, 'e');
+    const whereClause = query.whereClause(this.dialect, 'e');
     //language=SQLite
     return this.db
-      .prepare(`
-          SELECT e.position, e.type, e.payload, GROUP_CONCAT(t.tag) as tags
-          FROM events e
-                   LEFT JOIN event_tags t ON e.position = t.event_position
-          ${whereClause}
-          GROUP BY e.position
-          ORDER BY e.position
-      `)
+      .prepare(this.eventSqlQuery(whereClause))
       .all() as SqliteEvent[];
   }
 
-  private appendConditionShouldFail(appendCondition: AppendCondition) {
+  private eventSqlQuery(whereClause: string) {
+    return `
+          SELECT e.position, e.type, e.payload, GROUP_CONCAT(t.tag) as tags
+          FROM events e
+                   LEFT JOIN event_tags t ON e.position = t.event_position
+          ${ whereClause }
+          GROUP BY e.position
+          ORDER BY e.position
+      `;
+  }
+
+  private appendConditionShouldFail(appendCondition: AppendCondition): boolean {
     if (appendCondition.isEmpty()) {
       return false;
     }
-    const whereClause = appendCondition.toWhereClause(this.dialect, 'events');
-    return this.db.prepare(`
+    const whereClause = appendCondition.whereClause(this.dialect, 'events');
+    const events = this.db.prepare(`
         SELECT 1
         FROM events ${whereClause}
         LIMIT 1
     `).get();
+
+    return !!events;
   }
 
   private ensureSchema(): void {

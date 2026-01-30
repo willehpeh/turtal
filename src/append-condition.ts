@@ -20,8 +20,8 @@ export class AppendCondition {
     return this.query.types().length === 0 && this.query.tags().length === 0;
   }
 
-  toWhereClause(dialect: SqlDialect, tableName: string): string {
-    return this.query.toWhereClause(dialect, tableName);
+  whereClause(dialect: SqlDialect, tableName: string): string {
+    return this.query.whereClause(dialect, tableName);
   }
 
 }
