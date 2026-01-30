@@ -1,15 +1,12 @@
 import { EventQuery } from './event-query';
+import { SqlDialect } from './sql-dialect';
 
 export class AppendCondition {
 
-  private readonly _types: string[];
-  private readonly _tags: string[];
-
-  private constructor(query: EventQuery = new EventQuery(),
-                      private readonly _after = 0) {
-    this._types = query.types();
-    this._tags = query.tags();
-  }
+  private constructor(
+    private readonly query: EventQuery = new EventQuery(),
+    private readonly _after = 0
+  ) {}
 
   static empty(): AppendCondition {
     return new AppendCondition();
@@ -20,15 +17,11 @@ export class AppendCondition {
   }
 
   isEmpty(): boolean {
-    return this._types.length === 0 && this._tags.length === 0;
+    return this.query.types().length === 0 && this.query.tags().length === 0;
   }
 
-  types(): string[] {
-    return this._types.slice();
-  }
-
-  tags(): string[] {
-    return this._tags.slice();
+  toWhereClause(dialect: SqlDialect, tableName: string): string {
+    return this.query.toWhereClause(dialect, tableName);
   }
 
 }

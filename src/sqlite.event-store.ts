@@ -5,8 +5,12 @@ import { EventQuery } from './event-query';
 import { SequencedEvent } from './sequenced-event';
 import { DomainEvent } from './domain-event';
 import { SqliteEvent } from './sqlite-event';
+import { SqlDialect } from './sql-dialect';
+import { SqliteDialect } from './sqlite-dialect';
 
 export class SqliteEventStore extends EventStore {
+  private readonly dialect: SqlDialect = new SqliteDialect();
+
   constructor(private readonly db: Database) {
     super();
     this.ensureSchema();
@@ -22,9 +26,9 @@ export class SqliteEventStore extends EventStore {
     return Promise.resolve();
   }
 
-  events(_query: EventQuery = new EventQuery()): Promise<SequencedEvent[]> {
+  events(query: EventQuery = new EventQuery()): Promise<SequencedEvent[]> {
     return Promise.resolve(
-      this.eventDbRows().map((row) => ({
+      this.eventDbRows(query).map((row) => ({
         position: row.position,
         type: row.type,
         payload: JSON.parse(row.payload),
@@ -33,12 +37,15 @@ export class SqliteEventStore extends EventStore {
     );
   }
 
-  private eventDbRows(): SqliteEvent[] {
+  private eventDbRows(query: EventQuery): SqliteEvent[] {
+    const whereClause = query.toWhereClause(this.dialect, 'e');
+    //language=SQLite
     return this.db
       .prepare(`
           SELECT e.position, e.type, e.payload, GROUP_CONCAT(t.tag) as tags
           FROM events e
                    LEFT JOIN event_tags t ON e.position = t.event_position
+          ${whereClause}
           GROUP BY e.position
           ORDER BY e.position
       `)
@@ -49,40 +56,12 @@ export class SqliteEventStore extends EventStore {
     if (appendCondition.isEmpty()) {
       return false;
     }
+    const whereClause = appendCondition.toWhereClause(this.dialect, 'events');
     return this.db.prepare(`
         SELECT 1
-        FROM events ${ this.buildWhereClause(appendCondition) }
+        FROM events ${whereClause}
         LIMIT 1
     `).get();
-  }
-
-  private buildWhereClause(condition: AppendCondition): string {
-    const clauses: string[] = [];
-
-    if (condition.types().length > 0) {
-      clauses.push(this.typesClause(condition.types()));
-    }
-
-    if (condition.tags().length > 0) {
-      clauses.push(this.tagsClause(condition.tags()));
-    }
-
-    if (clauses.length === 0) {
-      return '';
-    }
-
-    return `WHERE ${ clauses.join(' AND ') }`;
-  }
-
-  private typesClause(types: string[]): string {
-    const quoted = types.map(type => `'${ type }'`).join(',');
-    return `type IN (${ quoted })`;
-  }
-
-  private tagsClause(tags: string[]): string {
-    return tags
-      .map(tag => `EXISTS (SELECT 1 FROM event_tags WHERE event_position = events.position AND tag = '${ tag }')`)
-      .join(' AND ');
   }
 
   private ensureSchema(): void {
