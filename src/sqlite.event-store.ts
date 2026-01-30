@@ -46,14 +46,15 @@ export class SqliteEventStore extends EventStore {
   }
 
   private eventSqlQuery(whereClause: string) {
+    //language=SQLite
     return `
-          SELECT e.position, e.type, e.payload, GROUP_CONCAT(t.tag) as tags
-          FROM events e
-                   LEFT JOIN event_tags t ON e.position = t.event_position
-          ${ whereClause }
-          GROUP BY e.position
-          ORDER BY e.position
-      `;
+        SELECT e.position, e.type, e.payload, GROUP_CONCAT(t.tag) as tags
+        FROM events e
+                 LEFT JOIN event_tags t ON e.position = t.event_position
+            ${ whereClause }
+        GROUP BY e.position
+        ORDER BY e.position
+    `;
   }
 
   private appendConditionShouldFail(appendCondition: AppendCondition): boolean {
