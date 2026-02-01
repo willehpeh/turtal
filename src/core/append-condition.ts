@@ -26,7 +26,7 @@ export class AppendCondition {
     return this.criteria.isEmpty();
   }
 
-  buildQuery<T>(builder: QueryBuilder<T>): T {
-    return this.criteria.applyTo(builder).afterPosition(this.after).build();
+  query<T>(builder: QueryBuilder<T>): T {
+    return this.criteria.appliedTo(builder).afterPosition(this.after).build();
   }
 }

@@ -52,7 +52,7 @@ export class SqliteEventStore extends EventStore {
           SELECT events.id, events.position, events.type, events.payload, GROUP_CONCAT(t.tag) as tags
           FROM events
                    LEFT JOIN event_tags t ON events.position = t.event_position
-              ${criteria.applyTo(this.queryBuilder).build()}
+              ${criteria.appliedTo(this.queryBuilder).build()}
           GROUP BY events.position
           ORDER BY events.position
       `)
@@ -65,7 +65,7 @@ export class SqliteEventStore extends EventStore {
     }
     const events = this.db.prepare(`
         SELECT 1
-        FROM events ${appendCondition.buildQuery(this.queryBuilder)}
+        FROM events ${appendCondition.query(this.queryBuilder)}
         LIMIT 1
     `).get();
 

@@ -19,7 +19,7 @@ export class EventCriteria {
     return this;
   }
 
-  applyTo<T>(builder: QueryBuilder<T>): QueryBuilder<T> {
+  appliedTo<T>(builder: QueryBuilder<T>): QueryBuilder<T> {
     return builder.withTypes(this._types).withTags(this._tags);
   }
 }
