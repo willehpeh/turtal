@@ -1,4 +1,4 @@
-import { SqlDialect } from './sql-dialect';
+import { SqlDialect } from '../core/sql-dialect';
 
 export class SqliteDialect implements SqlDialect {
   typesClause(types: string[], tableName: string): string {

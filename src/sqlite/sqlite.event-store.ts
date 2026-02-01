@@ -1,13 +1,13 @@
 import type { Database } from 'better-sqlite3';
-import { EventStore } from './event-store';
-import { AppendCondition } from './append-condition';
-import { EventQuery } from './event-query';
-import { SequencedEvent } from './sequenced-event';
-import { DomainEvent } from './domain-event';
+import { EventStore } from '../core/event-store';
+import { AppendCondition } from '../core/append-condition';
+import { EventQuery } from '../core/event-query';
+import { SequencedEvent } from '../core/sequenced-event';
+import { DomainEvent } from '../core/domain-event';
 import { SqliteEvent } from './sqlite-event';
-import { SqlDialect } from './sql-dialect';
+import { SqlDialect } from '../core/sql-dialect';
 import { SqliteDialect } from './sqlite-dialect';
-import { AppendConditionError } from './append-condition.error';
+import { AppendConditionError } from '../core/append-condition.error';
 
 export class SqliteEventStore extends EventStore {
   private readonly dialect: SqlDialect = new SqliteDialect();

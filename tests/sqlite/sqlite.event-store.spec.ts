@@ -1,9 +1,9 @@
 import Database from 'better-sqlite3';
-import { SqliteEventStore } from '../../src/sqlite.event-store';
-import { DomainEvent } from '../../src/domain-event';
-import { AppendCondition } from '../../src/append-condition';
-import { EventQuery } from '../../src/event-query';
-import { SequencedEvent } from '../../src/sequenced-event';
+import { SqliteEventStore } from '../../src/sqlite/sqlite.event-store';
+import { DomainEvent } from '../../src/core/domain-event';
+import { AppendCondition } from '../../src/core/append-condition';
+import { EventQuery } from '../../src/core/event-query';
+import { SequencedEvent } from '../../src/core/sequenced-event';
 
 function sortTags<T extends { tags: string[] }>(event: T): T {
   return { ...event, tags: [...event.tags].sort() };
