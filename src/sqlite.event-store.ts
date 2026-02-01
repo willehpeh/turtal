@@ -7,6 +7,7 @@ import { DomainEvent } from './domain-event';
 import { SqliteEvent } from './sqlite-event';
 import { SqlDialect } from './sql-dialect';
 import { SqliteDialect } from './sqlite-dialect';
+import { AppendConditionError } from './append-condition.error';
 
 export class SqliteEventStore extends EventStore {
   private readonly dialect: SqlDialect = new SqliteDialect();
@@ -30,7 +31,7 @@ export class SqliteEventStore extends EventStore {
   private buildAppendTransaction(appendCondition: AppendCondition, events: DomainEvent[]) {
     return this.db.transaction(() => {
       if (this.appendConditionShouldFail(appendCondition)) {
-        throw new Error('Append condition violation');
+        throw new AppendConditionError(appendCondition, events);
       }
       events.forEach((event) => this.insertEvent(event));
     });
