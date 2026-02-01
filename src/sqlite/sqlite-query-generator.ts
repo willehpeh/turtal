@@ -2,11 +2,14 @@ import { DbQueryGenerator } from '../core/db-query-generator';
 
 export class SqliteQueryGenerator implements DbQueryGenerator<string> {
   generate(types: string[], tags: string[], after?: number): string {
-    return [
+    const clauses = [
       this.typesClause(types),
       this.tagsClause(tags),
       this.positionAfterClause(after),
-    ].filter(Boolean).join(' AND ');
+    ].filter(Boolean);
+
+    if (!clauses.length) return '';
+    return `WHERE ${clauses.join(' AND ')}`;
   }
 
   private typesClause(types: string[]): string {

@@ -51,23 +51,16 @@ export class SqliteEventStore extends EventStore {
     const whereClause = query.generateDbQuery(new SqliteQueryGenerator());
     //language=SQLite
     return this.db
-      .prepare(this.eventSqlQuery(whereClause))
+      .prepare(`
+          SELECT events.id, events.position, events.type, events.payload, GROUP_CONCAT(t.tag) as tags
+          FROM events
+                   LEFT JOIN event_tags t ON events.position = t.event_position
+              ${ whereClause }
+          GROUP BY events.position
+          ORDER BY events.position
+      `)
       .all() as SqliteEvent[];
   }
-
-  private eventSqlQuery(whereClause: string) {
-    const wherePrefix = whereClause ? `WHERE ${ whereClause }` : '';
-    //language=SQLite
-    return `
-        SELECT events.id, events.position, events.type, events.payload, GROUP_CONCAT(t.tag) as tags
-        FROM events
-                 LEFT JOIN event_tags t ON events.position = t.event_position
-            ${ wherePrefix }
-        GROUP BY events.position
-        ORDER BY events.position
-    `;
-  }
-
   private appendConditionShouldFail(appendCondition: AppendCondition): boolean {
     if (appendCondition.isEmpty()) {
       return false;
@@ -76,7 +69,7 @@ export class SqliteEventStore extends EventStore {
     const events = this.db.prepare(`
         SELECT 1
         FROM events
-        WHERE ${ whereClause }
+        ${whereClause}
         LIMIT 1
     `).get();
 
