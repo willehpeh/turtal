@@ -12,8 +12,8 @@ export class AppendCondition {
     return new AppendCondition();
   }
 
-  static forQuery(query: EventQuery): AppendCondition {
-    return new AppendCondition(query);
+  static forQuery(query: EventQuery, after = 0): AppendCondition {
+    return new AppendCondition(query, after);
   }
 
   isEmpty(): boolean {
@@ -26,14 +26,6 @@ export class AppendCondition {
       return queryClause;
     }
     const positionClause = dialect.positionAfterClause(this._after, tableName);
-    if (queryClause === '') {
-      return `WHERE ${positionClause}`;
-    }
     return `${queryClause} AND ${positionClause}`;
-  }
-
-  after(position: number): AppendCondition {
-    this._after = position;
-    return this;
   }
 }

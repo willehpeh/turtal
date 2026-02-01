@@ -408,7 +408,7 @@ describe('SQLite Event Store', () => {
     ];
     await store.append(storedEvents);
     const query = new EventQuery().forTypes('TestEvent').forTags('user:test');
-    const appendCondition = AppendCondition.forQuery(query).after(2);
+    const appendCondition = AppendCondition.forQuery(query, 2);
     const newEvent: DomainEvent = {
       type: 'TestEvent',
       payload: {
