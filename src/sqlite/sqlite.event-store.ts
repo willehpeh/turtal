@@ -17,10 +17,8 @@ export class SqliteEventStore extends EventStore {
   }
 
   append(events: DomainEvent[], appendCondition: AppendCondition = AppendCondition.empty()): Promise<void> {
-    const transaction = this.buildAppendTransaction(appendCondition, events);
-
     try {
-      transaction();
+      this.buildAppendTransaction(appendCondition, events)();
       return Promise.resolve();
     } catch (error) {
       return Promise.reject(error);
@@ -30,9 +28,7 @@ export class SqliteEventStore extends EventStore {
   events(criteria = new EventCriteria()): Promise<SequencedEvent[]> {
     return Promise.resolve(
       this.eventDbRows(criteria).map((row) => ({
-        id: row.id,
-        position: row.position,
-        type: row.type,
+        ...row,
         payload: JSON.parse(row.payload),
         tags: row.tags ? row.tags.split(',') : [],
       }))
