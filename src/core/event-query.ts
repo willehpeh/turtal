@@ -23,7 +23,7 @@ export class EventQuery {
     return this;
   }
 
-  generate<T>(generator: DbQueryGenerator<T>): T {
+  generateDbQuery<T>(generator: DbQueryGenerator<T>): T {
     return generator.generate(this._types, this._tags);
   }
 }

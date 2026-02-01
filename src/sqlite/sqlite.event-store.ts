@@ -48,7 +48,7 @@ export class SqliteEventStore extends EventStore {
 
   private eventDbRows(query: EventQuery): SqliteEvent[] {
     const generator = new SqliteQueryGenerator('e');
-    const whereClause = query.generate(generator);
+    const whereClause = query.generateDbQuery(generator);
     //language=SQLite
     return this.db
       .prepare(this.eventSqlQuery(whereClause))

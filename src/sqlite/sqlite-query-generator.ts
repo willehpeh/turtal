@@ -12,7 +12,7 @@ export class SqliteQueryGenerator implements DbQueryGenerator<string> {
     if (tags.length > 0) {
       clauses.push(this.tagsClause(tags));
     }
-    if (after !== undefined && after > 0) {
+    if (after) {
       clauses.push(this.positionAfterClause(after));
     }
 
