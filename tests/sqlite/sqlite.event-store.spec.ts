@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { SqliteEventStore } from '../../src/sqlite/sqlite.event-store';
+import { SqliteEventStore } from '../../src';
 import { DomainEvent } from '../../src/core/domain-event';
 import { AppendCondition } from '../../src/core/append-condition';
 import { EventQuery } from '../../src/core/event-query';
