@@ -13,6 +13,10 @@ export class EventCriteria {
     return this._tags.slice();
   }
 
+  isEmpty(): boolean {
+    return this._types.length === 0 && this._tags.length === 0;
+  }
+
   forTypes(...types: string[]): EventCriteria {
     this._types.push(...types);
     return this;
@@ -24,6 +28,6 @@ export class EventCriteria {
   }
 
   buildQuery<T>(builder: QueryBuilder<T>): T {
-    return builder.generate(this._types, this._tags);
+    return builder.build(this._types, this._tags);
   }
 }

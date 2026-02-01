@@ -1,7 +1,7 @@
 import { QueryBuilder } from '../core/query-builder';
 
 export class SqliteQueryBuilder implements QueryBuilder<string> {
-  generate(types: string[], tags: string[], after?: number): string {
+  build(types: string[], tags: string[], after?: number): string {
     const clauses = [
       this.typesClause(types),
       this.tagsClause(tags),

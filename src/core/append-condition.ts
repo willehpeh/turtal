@@ -5,7 +5,7 @@ export class AppendCondition {
 
   private constructor(
     private readonly criteria: EventCriteria = new EventCriteria(),
-    private _after = 0
+    private readonly after = 0
   ) {}
 
   static empty(): AppendCondition {
@@ -14,29 +14,23 @@ export class AppendCondition {
 
   /**
    * If criteria is empty, position is ignored.
-   * @param criteria
-   * @param after
    */
   static forCriteria(criteria: EventCriteria, after = 0): AppendCondition {
-    if (this.isEmptyCriteria(criteria)) {
+    if (criteria.isEmpty()) {
       return AppendCondition.empty();
     }
     return new AppendCondition(criteria, after);
   }
 
-  private static isEmptyCriteria(criteria: EventCriteria) {
-    return criteria.types().length === 0 && criteria.tags().length === 0;
-  }
-
   isEmpty(): boolean {
-    return this.criteria.types().length === 0 && this.criteria.tags().length === 0;
+    return this.criteria.isEmpty();
   }
 
   buildQuery<T>(builder: QueryBuilder<T>): T {
-    return builder.generate(
+    return builder.build(
       this.criteria.types(),
       this.criteria.tags(),
-      this._after
+      this.after
     );
   }
 }
