@@ -1,3 +1,6 @@
 export interface QueryBuilder<T> {
-  build(types: string[], tags: string[], after?: number): T;
+  withTypes(types: string[]): QueryBuilder<T>;
+  withTags(tags: string[]): QueryBuilder<T>;
+  afterPosition(position: number): QueryBuilder<T>;
+  build(): T;
 }

@@ -38,7 +38,7 @@ export class SqliteEventStore extends EventStore {
 
   private buildAppendTransaction(appendCondition: AppendCondition, events: DomainEvent[]) {
     return this.db.transaction(() => {
-      if (this.hasConflicts(appendCondition)) {
+      if (this.appendShouldFail(appendCondition)) {
         throw new AppendConditionError(appendCondition, events);
       }
       events.forEach((event) => this.insertEvent(event));
@@ -52,14 +52,14 @@ export class SqliteEventStore extends EventStore {
           SELECT events.id, events.position, events.type, events.payload, GROUP_CONCAT(t.tag) as tags
           FROM events
                    LEFT JOIN event_tags t ON events.position = t.event_position
-              ${criteria.buildQuery(this.queryBuilder)}
+              ${criteria.applyTo(this.queryBuilder).build()}
           GROUP BY events.position
           ORDER BY events.position
       `)
       .all() as SqliteEvent[];
   }
 
-  private hasConflicts(appendCondition: AppendCondition): boolean {
+  private appendShouldFail(appendCondition: AppendCondition): boolean {
     if (appendCondition.isEmpty()) {
       return false;
     }
