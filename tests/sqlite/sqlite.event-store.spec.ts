@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { SqliteEventStore } from '../../src';
 import { DomainEvent } from '../../src/core/domain-event';
 import { AppendCondition } from '../../src/core/append-condition';
-import { EventQuery } from '../../src/core/event-query';
+import { EventCriteria } from '../../src/core/event-criteria';
 import { SequencedEvent } from '../../src/core/sequenced-event';
 
 function sortTags<T extends { tags: string[] }>(event: T): T {
@@ -99,7 +99,7 @@ describe('SQLite Event Store', () => {
         'user:test',
       ]
     };
-    const appendCondition = AppendCondition.forQuery(new EventQuery().forTypes('TestEvent'))
+    const appendCondition = AppendCondition.forCriteria(new EventCriteria().forTypes('TestEvent'))
     await expect(store.append([shouldFailEvent], appendCondition)).rejects.toThrowError();
   });
 
@@ -114,7 +114,7 @@ describe('SQLite Event Store', () => {
         'user:test',
       ]
     };
-    const appendCondition = AppendCondition.forQuery(new EventQuery().forTypes('TestEventDoesNotExist'))
+    const appendCondition = AppendCondition.forCriteria(new EventCriteria().forTypes('TestEventDoesNotExist'))
     await expect(store.append([event], appendCondition)).resolves.not.toThrowError();
   });
 
@@ -138,7 +138,7 @@ describe('SQLite Event Store', () => {
       },
       tags: []
     };
-    const appendCondition = AppendCondition.forQuery(new EventQuery().forTypes('RandomTestEvent', 'TestEvent'))
+    const appendCondition = AppendCondition.forCriteria(new EventCriteria().forTypes('RandomTestEvent', 'TestEvent'))
     await expect(store.append([event, shouldFailEvent], appendCondition)).rejects.toThrowError();
   });
 
@@ -166,7 +166,7 @@ describe('SQLite Event Store', () => {
         'test:456',
       ]
     };
-    const appendCondition = AppendCondition.forQuery(new EventQuery().forTags('test:123', 'user:test'));
+    const appendCondition = AppendCondition.forCriteria(new EventCriteria().forTags('test:123', 'user:test'));
     await expect(store.append([newEvent], appendCondition)).rejects.toThrowError();
   });
 
@@ -194,7 +194,7 @@ describe('SQLite Event Store', () => {
         'test:456',
       ]
     };
-    const appendCondition = AppendCondition.forQuery(new EventQuery().forTags('test:123', 'other-test-456'));
+    const appendCondition = AppendCondition.forCriteria(new EventCriteria().forTags('test:123', 'other-test-456'));
     await store.append([newEvent], appendCondition);
     const events = await store.events();
     expectEventsEqual(events, [
@@ -224,7 +224,7 @@ describe('SQLite Event Store', () => {
       },
       tags: []
     };
-    const appendCondition = AppendCondition.forQuery(new EventQuery()
+    const appendCondition = AppendCondition.forCriteria(new EventCriteria()
       .forTags('user:test', 'test:123')
       .forTypes('NotTestEvent')
     );
@@ -257,7 +257,7 @@ describe('SQLite Event Store', () => {
       },
       tags: []
     };
-    const appendCondition = AppendCondition.forQuery(new EventQuery()
+    const appendCondition = AppendCondition.forCriteria(new EventCriteria()
       .forTags('user:test', 'test:123')
       .forTypes('TestEvent', 'RandomEvent')
     );
@@ -306,7 +306,7 @@ describe('SQLite Event Store', () => {
       }
     ];
     await store.append(storedEvents);
-    const query = new EventQuery().forTypes('TestEvent', 'TestEvent3');
+    const query = new EventCriteria().forTypes('TestEvent', 'TestEvent3');
     const events = await store.events(query);
     expectEventsEqual(events, [
       { ...storedEvents[0], position: 1 },
@@ -349,7 +349,7 @@ describe('SQLite Event Store', () => {
       }
     ];
     await store.append(storedEvents);
-    const query = new EventQuery().forTags('user:test');
+    const query = new EventCriteria().forTags('user:test');
     const events = await store.events(query);
     expectEventsEqual(events, [
       { ...storedEvents[0], position: 1 },
@@ -402,7 +402,7 @@ describe('SQLite Event Store', () => {
       }
     ];
     await store.append(storedEvents);
-    const query = new EventQuery().forTypes('TestEvent').forTags('user:test', 'test:123');
+    const query = new EventCriteria().forTypes('TestEvent').forTags('user:test', 'test:123');
     const events = await store.events(query);
     expectEventsEqual(events, [
       { ...storedEvents[0], position: 1 },
@@ -436,8 +436,8 @@ describe('SQLite Event Store', () => {
       },
     ];
     await store.append(storedEvents);
-    const query = new EventQuery().forTypes('TestEvent').forTags('user:test');
-    const appendCondition = AppendCondition.forQuery(query, 2);
+    const query = new EventCriteria().forTypes('TestEvent').forTags('user:test');
+    const appendCondition = AppendCondition.forCriteria(query, 2);
     const newEvent: DomainEvent = {
       id: 'event-3',
       type: 'TestEvent',

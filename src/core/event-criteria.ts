@@ -1,6 +1,6 @@
-import { DbQueryGenerator } from './db-query-generator';
+import { QueryBuilder } from './query-builder';
 
-export class EventQuery {
+export class EventCriteria {
 
   private _types: string[] = [];
   private _tags: string[] = [];
@@ -13,17 +13,17 @@ export class EventQuery {
     return this._tags.slice();
   }
 
-  forTypes(...types: string[]): EventQuery {
+  forTypes(...types: string[]): EventCriteria {
     this._types.push(...types);
     return this;
   }
 
-  forTags(...tags: string[]): EventQuery {
+  forTags(...tags: string[]): EventCriteria {
     this._tags.push(...tags);
     return this;
   }
 
-  generateDbQuery<T>(generator: DbQueryGenerator<T>): T {
-    return generator.generate(this._types, this._tags);
+  buildQuery<T>(builder: QueryBuilder<T>): T {
+    return builder.generate(this._types, this._tags);
   }
 }

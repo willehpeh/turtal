@@ -1,6 +1,6 @@
-import { DbQueryGenerator } from '../core/db-query-generator';
+import { QueryBuilder } from '../core/query-builder';
 
-export class SqliteQueryGenerator implements DbQueryGenerator<string> {
+export class SqliteQueryBuilder implements QueryBuilder<string> {
   generate(types: string[], tags: string[], after?: number): string {
     const clauses = [
       this.typesClause(types),
