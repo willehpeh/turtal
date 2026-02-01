@@ -5,12 +5,10 @@ import { EventQuery } from '../core/event-query';
 import { SequencedEvent } from '../core/sequenced-event';
 import { DomainEvent } from '../core/domain-event';
 import { SqliteEvent } from './sqlite-event';
-import { SqlDialect } from '../core/sql-dialect';
-import { SqliteDialect } from './sqlite-dialect';
+import { SqliteQueryGenerator } from './sqlite-query-generator';
 import { AppendConditionError } from '../core/append-condition.error';
 
 export class SqliteEventStore extends EventStore {
-  private readonly dialect: SqlDialect = new SqliteDialect();
 
   constructor(private readonly db: Database) {
     super();
@@ -49,7 +47,8 @@ export class SqliteEventStore extends EventStore {
   }
 
   private eventDbRows(query: EventQuery): SqliteEvent[] {
-    const whereClause = query.whereClause(this.dialect, 'e');
+    const generator = new SqliteQueryGenerator('e');
+    const whereClause = query.generate(generator);
     //language=SQLite
     return this.db
       .prepare(this.eventSqlQuery(whereClause))
@@ -57,12 +56,13 @@ export class SqliteEventStore extends EventStore {
   }
 
   private eventSqlQuery(whereClause: string) {
+    const wherePrefix = whereClause ? `WHERE ${whereClause}` : '';
     //language=SQLite
     return `
         SELECT e.position, e.type, e.payload, GROUP_CONCAT(t.tag) as tags
         FROM events e
                  LEFT JOIN event_tags t ON e.position = t.event_position
-            ${ whereClause }
+            ${ wherePrefix }
         GROUP BY e.position
         ORDER BY e.position
     `;
@@ -72,10 +72,10 @@ export class SqliteEventStore extends EventStore {
     if (appendCondition.isEmpty()) {
       return false;
     }
-    const whereClause = appendCondition.whereClause(this.dialect, 'events');
+    const whereClause = appendCondition.generateDbQuery(new SqliteQueryGenerator('events'));
     const events = this.db.prepare(`
         SELECT 1
-        FROM events ${whereClause}
+        FROM events WHERE ${whereClause}
         LIMIT 1
     `).get();
 

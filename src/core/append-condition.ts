@@ -1,5 +1,5 @@
 import { EventQuery } from './event-query';
-import { SqlDialect } from './sql-dialect';
+import { DbQueryGenerator } from './db-query-generator';
 
 export class AppendCondition {
 
@@ -32,12 +32,11 @@ export class AppendCondition {
     return this.query.types().length === 0 && this.query.tags().length === 0;
   }
 
-  whereClause(dialect: SqlDialect, tableName: string): string {
-    const queryClause = this.query.whereClause(dialect, tableName);
-    if (this._after === 0) {
-      return queryClause;
-    }
-    const positionClause = dialect.positionAfterClause(this._after, tableName);
-    return `${queryClause} AND ${positionClause}`;
+  generateDbQuery<T>(generator: DbQueryGenerator<T>): T {
+    return generator.generate(
+      this.query.types(),
+      this.query.tags(),
+      this._after
+    );
   }
 }

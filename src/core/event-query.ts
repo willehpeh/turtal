@@ -1,4 +1,4 @@
-import { SqlDialect } from './sql-dialect';
+import { DbQueryGenerator } from './db-query-generator';
 
 export class EventQuery {
 
@@ -23,21 +23,7 @@ export class EventQuery {
     return this;
   }
 
-  whereClause(dialect: SqlDialect, tableName: string): string {
-    const clauses: string[] = [];
-
-    if (this._types.length > 0) {
-      clauses.push(dialect.typesClause(this._types, tableName));
-    }
-
-    if (this._tags.length > 0) {
-      clauses.push(dialect.tagsClause(this._tags, tableName));
-    }
-
-    if (clauses.length === 0) {
-      return '';
-    }
-
-    return `WHERE ${clauses.join(' AND ')}`;
+  generate<T>(generator: DbQueryGenerator<T>): T {
+    return generator.generate(this._types, this._tags);
   }
 }
