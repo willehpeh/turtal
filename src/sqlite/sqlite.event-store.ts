@@ -26,6 +26,18 @@ export class SqliteEventStore extends EventStore {
     }
   }
 
+  events(query: EventQuery = new EventQuery()): Promise<SequencedEvent[]> {
+    return Promise.resolve(
+      this.eventDbRows(query).map((row) => ({
+        id: row.id,
+        position: row.position,
+        type: row.type,
+        payload: JSON.parse(row.payload),
+        tags: row.tags ? row.tags.split(',') : [],
+      }))
+    );
+  }
+
   private buildAppendTransaction(appendCondition: AppendCondition, events: DomainEvent[]) {
     return this.db.transaction(() => {
       if (this.appendConditionShouldFail(appendCondition)) {
@@ -35,20 +47,8 @@ export class SqliteEventStore extends EventStore {
     });
   }
 
-  events(query: EventQuery = new EventQuery()): Promise<SequencedEvent[]> {
-    return Promise.resolve(
-      this.eventDbRows(query).map((row) => ({
-        position: row.position,
-        type: row.type,
-        payload: JSON.parse(row.payload),
-        tags: row.tags ? row.tags.split(',') : [],
-      }))
-    );
-  }
-
   private eventDbRows(query: EventQuery): SqliteEvent[] {
-    const generator = new SqliteQueryGenerator('e');
-    const whereClause = query.generateDbQuery(generator);
+    const whereClause = query.generateDbQuery(new SqliteQueryGenerator());
     //language=SQLite
     return this.db
       .prepare(this.eventSqlQuery(whereClause))
@@ -56,15 +56,15 @@ export class SqliteEventStore extends EventStore {
   }
 
   private eventSqlQuery(whereClause: string) {
-    const wherePrefix = whereClause ? `WHERE ${whereClause}` : '';
+    const wherePrefix = whereClause ? `WHERE ${ whereClause }` : '';
     //language=SQLite
     return `
-        SELECT e.position, e.type, e.payload, GROUP_CONCAT(t.tag) as tags
-        FROM events e
-                 LEFT JOIN event_tags t ON e.position = t.event_position
+        SELECT events.id, events.position, events.type, events.payload, GROUP_CONCAT(t.tag) as tags
+        FROM events
+                 LEFT JOIN event_tags t ON events.position = t.event_position
             ${ wherePrefix }
-        GROUP BY e.position
-        ORDER BY e.position
+        GROUP BY events.position
+        ORDER BY events.position
     `;
   }
 
@@ -72,10 +72,11 @@ export class SqliteEventStore extends EventStore {
     if (appendCondition.isEmpty()) {
       return false;
     }
-    const whereClause = appendCondition.generateDbQuery(new SqliteQueryGenerator('events'));
+    const whereClause = appendCondition.generateDbQuery(new SqliteQueryGenerator());
     const events = this.db.prepare(`
         SELECT 1
-        FROM events WHERE ${whereClause}
+        FROM events
+        WHERE ${ whereClause }
         LIMIT 1
     `).get();
 
@@ -87,6 +88,7 @@ export class SqliteEventStore extends EventStore {
     this.db.exec(`
         CREATE TABLE IF NOT EXISTS events
         (
+            id       TEXT NOT NULL UNIQUE COLLATE NOCASE,
             position INTEGER PRIMARY KEY AUTOINCREMENT,
             type     TEXT NOT NULL,
             payload  JSON NOT NULL
@@ -105,10 +107,10 @@ export class SqliteEventStore extends EventStore {
   }
 
   private insertEvent(event: DomainEvent) {
-    const transaction = this.db.prepare<[string, string]>(
-      'INSERT INTO events (type, payload) VALUES (?, ?)'
+    const transaction = this.db.prepare<[string, string, string]>(
+      'INSERT INTO events (id, type, payload) VALUES (?, ?, ?)'
     );
-    const { lastInsertRowid } = transaction.run(event.type, JSON.stringify(event.payload));
+    const { lastInsertRowid } = transaction.run(event.id, event.type, JSON.stringify(event.payload));
     this.insertTags(event.tags, lastInsertRowid as number);
   }
 

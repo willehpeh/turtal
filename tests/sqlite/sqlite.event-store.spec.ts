@@ -29,6 +29,7 @@ describe('SQLite Event Store', () => {
 
   it('should append the event', async () => {
     const event: DomainEvent = {
+      id: 'event-1',
       type: 'TestEvent',
       payload: {
         foo: 'bar',
@@ -48,6 +49,7 @@ describe('SQLite Event Store', () => {
   it('should append multiple events', async () => {
     const newEvents: DomainEvent[] = [
       {
+        id: 'event-1',
         type: 'TestEvent1',
         payload: {
           foo: 'bar',
@@ -57,6 +59,7 @@ describe('SQLite Event Store', () => {
         ]
       },
       {
+        id: 'event-2',
         type: 'TestEvent2',
         payload: {
           buzz: 'bizz',
@@ -76,6 +79,7 @@ describe('SQLite Event Store', () => {
 
   it('should fail to append if the event type already exists', async () => {
     const event: DomainEvent = {
+      id: 'event-1',
       type: 'TestEvent',
       payload: {
         foo: 'bar',
@@ -86,6 +90,7 @@ describe('SQLite Event Store', () => {
     };
     await store.append([event]);
     const shouldFailEvent: DomainEvent = {
+      id: 'event-2',
       type: 'TestEvent',
       payload: {
         foo: 'bar',
@@ -100,6 +105,7 @@ describe('SQLite Event Store', () => {
 
   it('should not fail to append if the event type does not exist', async () => {
     const event: DomainEvent = {
+      id: 'event-1',
       type: 'TestEvent',
       payload: {
         foo: 'bar',
@@ -114,6 +120,7 @@ describe('SQLite Event Store', () => {
 
   it('should fail to append if at least one event type matches', async () => {
     const event: DomainEvent = {
+      id: 'event-1',
       type: 'TestEvent',
       payload: {
         foo: 'bar',
@@ -124,6 +131,7 @@ describe('SQLite Event Store', () => {
     };
     await store.append([event]);
     const shouldFailEvent: DomainEvent = {
+      id: 'event-2',
       type: 'TestEvent1',
       payload: {
         foo: 'bar',
@@ -136,6 +144,7 @@ describe('SQLite Event Store', () => {
 
   it('should fail to append if there is at least one event with ALL OF the provided tags and no position provided', async () => {
     const event: DomainEvent = {
+      id: 'event-1',
       type: 'TestEvent',
       payload: {
         foo: 'bar',
@@ -147,6 +156,7 @@ describe('SQLite Event Store', () => {
     };
     await store.append([event]);
     const newEvent: DomainEvent = {
+      id: 'event-2',
       type: 'TestEvent2',
       payload: {
         buzz: 'bizz',
@@ -162,6 +172,7 @@ describe('SQLite Event Store', () => {
 
   it('should append if events exist with some but not all of the provided tags', async () => {
     const event: DomainEvent = {
+      id: 'event-1',
       type: 'TestEvent',
       payload: {
         foo: 'bar',
@@ -173,6 +184,7 @@ describe('SQLite Event Store', () => {
     };
     await store.append([event]);
     const newEvent: DomainEvent = {
+      id: 'event-2',
       type: 'TestEvent2',
       payload: {
         buzz: 'bizz',
@@ -193,6 +205,7 @@ describe('SQLite Event Store', () => {
 
   it('should append if an existing event matches all tags but not the type', async () => {
     const event: DomainEvent = {
+      id: 'event-1',
       type: 'TestEvent',
       payload: {
         foo: 'bar',
@@ -204,6 +217,7 @@ describe('SQLite Event Store', () => {
     };
     await store.append([event]);
     const newEvent: DomainEvent = {
+      id: 'event-2',
       type: 'TestEvent2',
       payload: {
         buzz: 'bizz',
@@ -224,6 +238,7 @@ describe('SQLite Event Store', () => {
 
   it('should fail to append if an existing event matches all tags and at least one type', async () => {
     const event: DomainEvent = {
+      id: 'event-1',
       type: 'TestEvent',
       payload: {
         foo: 'bar',
@@ -235,6 +250,7 @@ describe('SQLite Event Store', () => {
     };
     await store.append([event]);
     const newEvent: DomainEvent = {
+      id: 'event-2',
       type: 'TestEvent',
       payload: {
         buzz: 'bizz',
@@ -251,6 +267,7 @@ describe('SQLite Event Store', () => {
   it('should only return events that match the types in the query', async () => {
     const storedEvents: DomainEvent[] = [
       {
+        id: 'event-1',
         type: 'TestEvent',
         payload: {
           foo: 'bar',
@@ -261,6 +278,7 @@ describe('SQLite Event Store', () => {
         ]
       },
       {
+        id: 'event-2',
         type: 'TestEvent2',
         payload: {
           buzz: 'bizz',
@@ -268,6 +286,7 @@ describe('SQLite Event Store', () => {
         tags: []
       },
       {
+        id: 'event-3',
         type: 'TestEvent',
         payload: {
           foo: 'buzz',
@@ -278,6 +297,7 @@ describe('SQLite Event Store', () => {
         ]
       },
       {
+        id: 'event-4',
         type: 'TestEvent3',
         payload: {
           foo: 'bazz',
@@ -298,6 +318,7 @@ describe('SQLite Event Store', () => {
   it('should only return events that match the tags in the query', async () => {
     const storedEvents: DomainEvent[] = [
       {
+        id: 'event-1',
         type: 'TestEvent',
         payload: {
           foo: 'bar',
@@ -308,6 +329,7 @@ describe('SQLite Event Store', () => {
         ]
       },
       {
+        id: 'event-2',
         type: 'TestEvent2',
         payload: {
           buzz: 'bizz',
@@ -315,6 +337,7 @@ describe('SQLite Event Store', () => {
         tags: []
       },
       {
+        id: 'event-3',
         type: 'TestEvent',
         payload: {
           foo: 'bazz',
@@ -337,6 +360,7 @@ describe('SQLite Event Store', () => {
   it('should only return events that match the tags and types in the query', async () => {
     const storedEvents: DomainEvent[] = [
       {
+        id: 'event-1',
         type: 'TestEvent',
         payload: {
           foo: 'bar',
@@ -347,6 +371,7 @@ describe('SQLite Event Store', () => {
         ]
       },
       {
+        id: 'event-2',
         type: 'TestEvent',
         payload: {
           buzz: 'bizz',
@@ -354,6 +379,7 @@ describe('SQLite Event Store', () => {
         tags: []
       },
       {
+        id: 'event-3',
         type: 'TestEvent',
         payload: {
           foo: 'bazz',
@@ -364,6 +390,7 @@ describe('SQLite Event Store', () => {
         ]
       },
       {
+        id: 'event-4',
         type: 'TestEvent',
         payload: {
           foo: 'bazz',
@@ -386,6 +413,7 @@ describe('SQLite Event Store', () => {
   it('should append if no event exists after the latest observed position', async () => {
     const storedEvents: DomainEvent[] = [
       {
+        id: 'event-1',
         type: 'TestEvent',
         payload: {
           foo: 'bar',
@@ -396,6 +424,7 @@ describe('SQLite Event Store', () => {
         ]
       },
       {
+        id: 'event-2',
         type: 'TestEvent',
         payload: {
           foo: 'buzz',
@@ -410,6 +439,7 @@ describe('SQLite Event Store', () => {
     const query = new EventQuery().forTypes('TestEvent').forTags('user:test');
     const appendCondition = AppendCondition.forQuery(query, 2);
     const newEvent: DomainEvent = {
+      id: 'event-3',
       type: 'TestEvent',
       payload: {
         buzz: 'bizz',

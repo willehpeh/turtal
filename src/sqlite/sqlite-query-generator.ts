@@ -1,36 +1,29 @@
 import { DbQueryGenerator } from '../core/db-query-generator';
 
 export class SqliteQueryGenerator implements DbQueryGenerator<string> {
-  constructor(private readonly tableName: string) {}
-
   generate(types: string[], tags: string[], after?: number): string {
-    const clauses: string[] = [];
-
-    if (types.length > 0) {
-      clauses.push(this.typesClause(types));
-    }
-    if (tags.length > 0) {
-      clauses.push(this.tagsClause(tags));
-    }
-    if (after) {
-      clauses.push(this.positionAfterClause(after));
-    }
-
-    return clauses.join(' AND ');
+    return [
+      this.typesClause(types),
+      this.tagsClause(tags),
+      this.positionAfterClause(after),
+    ].filter(Boolean).join(' AND ');
   }
 
   private typesClause(types: string[]): string {
+    if (!types.length) return '';
     const quoted = types.map(type => `'${type}'`).join(',');
-    return `${this.tableName}.type IN (${quoted})`;
+    return `events.type IN (${quoted})`;
   }
 
   private tagsClause(tags: string[]): string {
+    if (!tags.length) return '';
     return tags
-      .map(tag => `EXISTS (SELECT 1 FROM event_tags WHERE event_position = ${this.tableName}.position AND tag = '${tag}')`)
+      .map(tag => `EXISTS (SELECT 1 FROM event_tags WHERE event_position = events.position AND tag = '${tag}')`)
       .join(' AND ');
   }
 
-  private positionAfterClause(position: number): string {
-    return `${this.tableName}.position > ${position}`;
+  private positionAfterClause(after?: number): string {
+    if (!after) return '';
+    return `events.position > ${after}`;
   }
 }
