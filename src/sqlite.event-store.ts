@@ -1,4 +1,4 @@
-import type { Database, Transaction } from 'better-sqlite3';
+import type { Database } from 'better-sqlite3';
 import { EventStore } from './event-store';
 import { AppendCondition } from './append-condition';
 import { EventQuery } from './event-query';
@@ -17,13 +17,23 @@ export class SqliteEventStore extends EventStore {
   }
 
   append(events: DomainEvent[], appendCondition: AppendCondition = AppendCondition.empty()): Promise<void> {
-    if (this.appendConditionShouldFail(appendCondition)) {
-      return Promise.reject(new Error('Concurrency error: append condition failed.'));
-    }
-    const insertAllTransaction = this.appendTransaction();
-    insertAllTransaction(events);
+    const transaction = this.buildAppendTransaction(appendCondition, events);
 
-    return Promise.resolve();
+    try {
+      transaction();
+      return Promise.resolve();
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
+
+  private buildAppendTransaction(appendCondition: AppendCondition, events: DomainEvent[]) {
+    return this.db.transaction(() => {
+      if (this.appendConditionShouldFail(appendCondition)) {
+        throw new Error('Append condition violation');
+      }
+      events.forEach((event) => this.insertEvent(event));
+    });
   }
 
   events(query: EventQuery = new EventQuery()): Promise<SequencedEvent[]> {
@@ -91,12 +101,6 @@ export class SqliteEventStore extends EventStore {
         );
         CREATE INDEX IF NOT EXISTS idx_event_tags_tag ON event_tags (tag);
     `);
-  }
-
-  private appendTransaction(): Transaction<(events: DomainEvent[]) => void> {
-    return this.db.transaction((events: DomainEvent[]) => {
-      events.forEach((event) => this.insertEvent(event))
-    });
   }
 
   private insertEvent(event: DomainEvent) {
