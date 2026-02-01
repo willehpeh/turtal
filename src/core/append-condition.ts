@@ -12,8 +12,20 @@ export class AppendCondition {
     return new AppendCondition();
   }
 
+  /**
+   * If query is empty, position is ignored.
+   * @param query
+   * @param after
+   */
   static forQuery(query: EventQuery, after = 0): AppendCondition {
+    if (this.isEmptyQuery(query)) {
+      return AppendCondition.empty();
+    }
     return new AppendCondition(query, after);
+  }
+
+  private static isEmptyQuery(query: EventQuery) {
+    return query.types().length === 0 && query.tags().length === 0;
   }
 
   isEmpty(): boolean {
