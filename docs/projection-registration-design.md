@@ -379,6 +379,96 @@ manager.register({
 - **Single point of coordination** - Manager becomes critical component
 - **Learning curve** - More concepts for library users
 
+### Simplified API Design
+
+The complexity of Approach 4 can be hidden behind a developer-friendly API using **progressive disclosure** - simple defaults for common cases, with advanced features available when needed.
+
+#### Minimal Configuration (Common Case)
+
+```typescript
+// Helper function with sensible defaults
+function defineProjection<TState>(config: {
+  name: string;
+  criteria: EventCriteria;
+  initialState: TState;
+  apply: (state: TState, event: SequencedEvent) => TState;
+}): ProjectionDefinition<TState>;
+
+// Usage: Only 4 required fields
+const orderTotals = defineProjection({
+  name: 'OrderTotals',
+  criteria: EventCriteria.forTypes('OrderPlaced', 'OrderCancelled'),
+  initialState: {} as Record<string, number>,
+
+  apply(state, event) {
+    if (event.type === 'OrderPlaced') {
+      const userId = event.payload.userId;
+      state[userId] = (state[userId] ?? 0) + event.payload.total;
+    }
+    return state;
+  }
+});
+
+// One-liner setup
+const manager = createProjectionManager(eventStore);
+manager.register(orderTotals);
+manager.start();
+```
+
+#### Advanced Options (Opt-in)
+
+```typescript
+const orderTotals = defineProjection({
+  name: 'OrderTotals',
+  criteria: EventCriteria.forTypes('OrderPlaced', 'OrderCancelled'),
+  initialState: {} as Record<string, number>,
+  apply(state, event) { /* ... */ return state; },
+
+  // All optional - only specify when needed
+  version: 2,                              // Triggers rebuild on change
+  retry: { maxRetries: 5 },                // Custom retry policy
+  dependencies: ['UserAccounts'],          // Wait for other projections
+  onError: (err, event) => log(err),       // Custom error handling
+});
+```
+
+#### What Gets Hidden by Defaults
+
+| Concern | Default Behavior |
+|---------|------------------|
+| Serialization | JSON.stringify/parse automatically |
+| Checkpoint storage | Same SQLite database as events |
+| Retry policy | 3 retries with exponential backoff |
+| Batch size | 100 events per batch |
+| Poll interval | 100ms |
+| Version | 1 (no auto-rebuild) |
+
+#### API Comparison
+
+```typescript
+// VERBOSE: Full interface as documented above
+manager.register({
+  name: 'OrderTotals',
+  version: 1,
+  criteria: EventCriteria.forTypes('OrderPlaced'),
+  initialState: {},
+  retryPolicy: { maxRetries: 3, backoffMs: 1000, backoffMultiplier: 2 },
+  apply(state, event) { return state; },
+  serialize(state) { return JSON.stringify(state); },
+  deserialize(data) { return JSON.parse(data as string); },
+});
+
+// SIMPLE: Developer-friendly equivalent
+manager.register(defineProjection({
+  name: 'OrderTotals',
+  criteria: EventCriteria.forTypes('OrderPlaced'),
+  initialState: {},
+  apply(state, event) { return state; },
+}));
+```
+
+This design ensures that **90% of use cases require only 4 fields**, while the full power of Approach 4 remains accessible for complex scenarios.
+
 ### Best For
 
 - Large-scale production systems
@@ -421,3 +511,122 @@ For Turtal, a phased approach is recommended:
    - Add lifecycle management, monitoring, error policies incrementally
 
 This progression allows the library to start simple while maintaining a path to sophisticated projection management.
+
+---
+
+## Open Question: Projection State Persistence
+
+A key architectural decision is whether Turtal should provide built-in persistence for projection state, or leave this as a consumer concern.
+
+### Option A: Library-Provided Persistence
+
+The library manages projection state storage internally, using the same SQLite database as events.
+
+```typescript
+// Library handles everything
+const manager = createProjectionManager(eventStore);
+manager.register(orderTotals);
+manager.start();
+
+// State automatically persisted and recovered on restart
+const state = manager.getState('OrderTotals');
+```
+
+#### Advantages
+
+- **Zero configuration** - Works out of the box
+- **Consistency** - State and checkpoints stored atomically
+- **Simpler mental model** - One system to understand
+- **Rebuild safety** - Library coordinates state clearing and replay
+
+#### Disadvantages
+
+- **Opinionated** - Forces JSON serialization, SQLite storage
+- **Schema coupling** - Library owns more of the database
+- **Limited flexibility** - Can't easily use Redis, Postgres, etc.
+- **Scalability ceiling** - SQLite may not suit all workloads
+
+### Option B: Consumer-Provided Persistence
+
+The library only manages checkpoints (position tracking). Consumers bring their own state storage.
+
+```typescript
+// Consumer provides state store
+const stateStore = new RedisProjectionStateStore(redis);
+const manager = createProjectionManager(eventStore, { stateStore });
+
+// Or: fully manual
+const checkpoint = await checkpointStore.get('OrderTotals');
+const events = await eventStore.events(criteria.afterPosition(checkpoint));
+const newState = events.reduce(apply, loadStateFromMyDatabase());
+await saveStateToMyDatabase(newState);
+await checkpointStore.save({ id: 'OrderTotals', position: lastEvent.position });
+```
+
+#### Advantages
+
+- **Flexible** - Use any storage backend (Redis, Postgres, MongoDB, memory)
+- **Optimal storage** - Choose the right tool for each projection's access patterns
+- **Separation of concerns** - Library focuses on event delivery
+- **No schema intrusion** - Library only needs checkpoint table
+
+#### Disadvantages
+
+- **More work for consumers** - Must implement state persistence
+- **Consistency risk** - Consumer must coordinate state + checkpoint updates
+- **Rebuild complexity** - Consumer must handle state clearing
+
+### Option C: Hybrid Approach (Recommended)
+
+Provide optional built-in persistence with an escape hatch for custom implementations.
+
+```typescript
+// Simple case: use built-in SQLite storage (default)
+const manager = createProjectionManager(eventStore);
+
+// Advanced: bring your own state store
+const manager = createProjectionManager(eventStore, {
+  stateStore: new RedisProjectionStateStore(redis)
+});
+
+// Expert: fully custom with just checkpoint tracking
+const manager = createProjectionManager(eventStore, {
+  stateStore: null  // Disable built-in state persistence
+});
+```
+
+#### Interface for Custom State Stores
+
+```typescript
+interface ProjectionStateStore {
+  get<TState>(name: string): Promise<{ state: TState; position: number } | null>;
+  save<TState>(name: string, state: TState, position: number): Promise<void>;
+  clear(name: string): Promise<void>;
+}
+
+// Built-in implementation
+class SqliteProjectionStateStore implements ProjectionStateStore {
+  constructor(private readonly db: Database) {}
+  // Uses same DB as event store
+}
+```
+
+#### Why Hybrid Works
+
+| User Type | What They Use |
+|-----------|---------------|
+| **Getting started** | Built-in SQLite, zero config |
+| **Production SQLite** | Built-in SQLite, just works |
+| **Custom storage needs** | Implement `ProjectionStateStore` interface |
+| **Existing infrastructure** | Adapt their DB to the interface |
+| **Full control** | Disable state persistence, manage manually |
+
+### Recommendation
+
+**Option C (Hybrid)** provides the best balance:
+
+1. **Built-in SQLite state store as default** - Enables the simple API without configuration
+2. **`ProjectionStateStore` interface** - Clear contract for custom implementations
+3. **Checkpoint-only mode** - For users who want full control
+
+This aligns with the library's existing pattern: `SqliteEventStore` is the concrete implementation, but `EventStore` is the abstract interface that could have other implementations.
