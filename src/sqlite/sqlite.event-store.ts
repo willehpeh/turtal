@@ -1,12 +1,12 @@
 import type { Database } from 'better-sqlite3';
-import { EventStore } from '../core/event-store';
-import { AppendCondition } from '../core/append-condition';
-import { EventCriteria } from '../core/event-criteria';
-import { SequencedEvent } from '../core/sequenced-event';
-import { DomainEvent } from '../core/domain-event';
+import { EventStore } from '../core/event-store/event-store';
+import { AppendCondition } from '../core/event-store/append-condition';
+import { EventCriteria } from '../core/event-store/event-criteria';
+import { SequencedEvent } from '../core/event-store/sequenced-event';
+import { DomainEvent } from '../core/event-store/domain-event';
 import { SqliteEvent } from './sqlite-event';
 import { SqliteQueryBuilder } from './sqlite-query-builder';
-import { AppendConditionError } from '../core/append-condition.error';
+import { AppendConditionError } from '../core/event-store/append-condition.error';
 import { SQLITE_SCHEMA_DEF } from './SQLITE_SCHEMA_DEF';
 
 export class SqliteEventStore extends EventStore {

@@ -1,4 +1,4 @@
-import { QueryBuilder } from '../core/query-builder';
+import { QueryBuilder } from '../core/event-store/query-builder';
 
 export class SqliteQueryBuilder implements QueryBuilder<string> {
   constructor(
