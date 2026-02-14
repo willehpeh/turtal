@@ -1,6 +1,6 @@
-export type DomainEvent = {
+export type DomainEvent<TType extends string = string, TPayload = unknown> = {
   id: string,
-  type: string,
-  payload: unknown,
+  type: TType,
+  payload: TPayload,
   tags: string[]
 };
