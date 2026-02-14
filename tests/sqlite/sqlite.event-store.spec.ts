@@ -7,7 +7,7 @@ describe('SQLite Event Store', () => {
 
   beforeEach(() => {
     const db = new Database(':memory:');
-    store = new SqliteEventStore(db);
+    store = SqliteEventStore.createSync(db);
   });
 
   eventStoreTests(() => store);

@@ -11,8 +11,7 @@ describe('PostgreSQL Event Store', () => {
   beforeAll(async () => {
     container = await new PostgreSqlContainer('postgres:17-alpine').start();
     pool = new Pool({ connectionString: container.getConnectionUri() });
-    store = new PostgresEventStore(pool);
-    await store.ensureSchema();
+    store = await PostgresEventStore.create(pool);
   }, 60_000);
 
   afterAll(async () => {

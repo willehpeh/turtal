@@ -12,9 +12,14 @@ import { SQLITE_SCHEMA_DEF } from './SQLITE_SCHEMA_DEF';
 export class SqliteEventStore extends EventStore {
   private readonly queryBuilder = new SqliteQueryBuilder();
 
-  constructor(private readonly db: Database) {
+  private constructor(private readonly db: Database) {
     super();
-    this.ensureSchema();
+  }
+
+  static createSync(db: Database): SqliteEventStore {
+    const store = new SqliteEventStore(db);
+    store.ensureSchema();
+    return store;
   }
 
   append(events: DomainEvent[], appendCondition: AppendCondition = AppendCondition.empty()): Promise<void> {

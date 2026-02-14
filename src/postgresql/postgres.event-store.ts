@@ -11,12 +11,14 @@ import { POSTGRES_SCHEMA_DEF } from './POSTGRES_SCHEMA_DEF';
 export class PostgresEventStore extends EventStore {
   private readonly queryBuilder = new PostgresQueryBuilder();
 
-  constructor(private readonly pool: Pool) {
+  private constructor(private readonly pool: Pool) {
     super();
   }
 
-  async ensureSchema(): Promise<void> {
-    await this.pool.query(POSTGRES_SCHEMA_DEF);
+  static async create(pool: Pool): Promise<PostgresEventStore> {
+    const store = new PostgresEventStore(pool);
+    await store.pool.query(POSTGRES_SCHEMA_DEF);
+    return store;
   }
 
   async append(events: DomainEvent[], appendCondition: AppendCondition = AppendCondition.empty()): Promise<void> {
