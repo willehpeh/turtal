@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { PostgresEventStore } from '../../src/postgresql/postgres.event-store';
+import { PostgresEventStore } from '../../src';
 import { eventStoreTests } from '../event-store.tests';
 
 describe('PostgreSQL Event Store', () => {

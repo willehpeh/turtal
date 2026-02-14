@@ -1,4 +1,4 @@
-import { EventStore } from '../src/core/event-store/event-store';
+import { EventStore } from '../src';
 import { DomainEvent } from '../src/core/event-store/domain-event';
 import { AppendCondition } from '../src/core/event-store/append-condition';
 import { EventCriteria } from '../src/core/event-store/event-criteria';

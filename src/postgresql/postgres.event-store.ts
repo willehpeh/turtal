@@ -22,26 +22,14 @@ export class PostgresEventStore extends EventStore {
   }
 
   async append(events: DomainEvent[], appendCondition: AppendCondition = AppendCondition.empty()): Promise<void> {
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE');
-
+    await this.withOptimisticLock(async (client) => {
       if (await this.appendShouldFail(client, appendCondition)) {
-        await client.query('ROLLBACK');
         throw new AppendConditionError(appendCondition, events);
       }
-
       for (const event of events) {
         await this.insertEvent(client, event);
       }
-
-      await client.query('COMMIT');
-    } catch (error) {
-      await client.query('ROLLBACK').catch(() => {});
-      throw error;
-    } finally {
-      client.release();
-    }
+    });
   }
 
   async events(criteria = new EventCriteria()): Promise<SequencedEvent[]> {
@@ -76,5 +64,19 @@ export class PostgresEventStore extends EventStore {
       'INSERT INTO events (id, type, payload, tags) VALUES ($1, $2, $3, $4)',
       [event.id, event.type, JSON.stringify(event.payload), event.tags]
     );
+  }
+
+  private async withOptimisticLock(fn: (client: PoolClient) => Promise<void>): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE');
+      await fn(client);
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 }
