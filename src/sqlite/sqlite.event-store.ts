@@ -10,7 +10,7 @@ import { AppendConditionError } from '../core/event-store/append-condition.error
 import { SQLITE_SCHEMA_DEF } from './SQLITE_SCHEMA_DEF';
 
 export class SqliteEventStore extends EventStore {
-  private readonly queryBuilder = new SqliteQueryBuilder();
+  private readonly queryBuilder: SqliteQueryBuilder = new SqliteQueryBuilder();
 
   private constructor(private readonly db: Database) {
     super();
@@ -51,28 +51,30 @@ export class SqliteEventStore extends EventStore {
   }
 
   private eventDbRows(criteria: EventCriteria): SqliteEvent[] {
+    const { text, values } = criteria.appliedTo(this.queryBuilder).build();
     //language=SQLite
     return this.db
       .prepare(`
           SELECT events.id, events.position, events.type, events.payload, GROUP_CONCAT(t.tag) as tags
           FROM events
                    LEFT JOIN event_tags t ON events.position = t.event_position
-              ${criteria.appliedTo(this.queryBuilder).build()}
+              ${text}
           GROUP BY events.position
           ORDER BY events.position
       `)
-      .all() as SqliteEvent[];
+      .all(...values) as SqliteEvent[];
   }
 
   private appendShouldFail(appendCondition: AppendCondition): boolean {
     if (appendCondition.isEmpty()) {
       return false;
     }
+    const { text, values } = appendCondition.query(this.queryBuilder);
     const events = this.db.prepare(`
         SELECT 1
-        FROM events ${appendCondition.query(this.queryBuilder)}
+        FROM events ${text}
         LIMIT 1
-    `).get();
+    `).get(...values);
 
     return !!events;
   }
