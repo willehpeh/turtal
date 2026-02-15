@@ -1,50 +1,54 @@
 import { QueryBuilder } from '../core/event-store/query-builder';
 
-export class SqliteQueryBuilder implements QueryBuilder<string> {
+export type SqliteParameterizedQuery = {
+  text: string;
+  values: unknown[];
+};
+
+export class SqliteQueryBuilder implements QueryBuilder<SqliteParameterizedQuery> {
   constructor(
     private readonly _types: string[] = [],
     private readonly _tags: string[] = [],
     private readonly _after: number = 0
   ) {}
 
-  withTypes(types: string[]): QueryBuilder<string> {
+  withTypes(types: string[]): QueryBuilder<SqliteParameterizedQuery> {
     return new SqliteQueryBuilder(types, this._tags, this._after);
   }
 
-  withTags(tags: string[]): QueryBuilder<string> {
+  withTags(tags: string[]): QueryBuilder<SqliteParameterizedQuery> {
     return new SqliteQueryBuilder(this._types, tags, this._after);
   }
 
-  afterPosition(position: number): QueryBuilder<string> {
+  afterPosition(position: number): QueryBuilder<SqliteParameterizedQuery> {
     return new SqliteQueryBuilder(this._types, this._tags, position);
   }
 
-  build(): string {
-    const clauses = [
-      this.typesClause(),
-      this.tagsClause(),
-      this.positionClause(),
-    ].filter(Boolean);
+  build(): SqliteParameterizedQuery {
+    const clauses: string[] = [];
+    const values: unknown[] = [];
 
-    if (!clauses.length) return '';
-    return `WHERE ${clauses.join(' AND ')}`;
-  }
+    if (this._types.length) {
+      const placeholders = this._types.map(() => '?').join(',');
+      clauses.push(`events.type IN (${placeholders})`);
+      values.push(...this._types);
+    }
 
-  private typesClause(): string {
-    if (!this._types.length) return '';
-    const quoted = this._types.map(type => `'${type}'`).join(',');
-    return `events.type IN (${quoted})`;
-  }
+    if (this._tags.length) {
+      for (const tag of this._tags) {
+        clauses.push(`EXISTS (SELECT 1 FROM event_tags WHERE event_position = events.position AND tag = ?)`);
+        values.push(tag);
+      }
+    }
 
-  private tagsClause(): string {
-    if (!this._tags.length) return '';
-    return this._tags
-      .map(tag => `EXISTS (SELECT 1 FROM event_tags WHERE event_position = events.position AND tag = '${tag}')`)
-      .join(' AND ');
-  }
+    if (this._after) {
+      clauses.push(`events.position > ?`);
+      values.push(this._after);
+    }
 
-  private positionClause(): string {
-    if (!this._after) return '';
-    return `events.position > ${this._after}`;
+    return {
+      text: clauses.length ? `WHERE ${clauses.join(' AND ')}` : '',
+      values,
+    };
   }
 }
