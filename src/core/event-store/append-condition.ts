@@ -1,11 +1,10 @@
 import { EventCriteria } from './event-criteria';
-import { QueryBuilder } from './query-builder';
 
 export class AppendCondition {
 
   private constructor(
-    private readonly criteria: EventCriteria = new EventCriteria(),
-    private readonly after = 0
+    readonly criteria: EventCriteria = new EventCriteria(),
+    readonly after = 0
   ) {}
 
   static empty(): AppendCondition {
@@ -24,9 +23,5 @@ export class AppendCondition {
 
   isEmpty(): boolean {
     return this.criteria.isEmpty();
-  }
-
-  query<T>(builder: QueryBuilder<T>): T {
-    return this.criteria.appliedTo(builder).afterPosition(this.after).build();
   }
 }

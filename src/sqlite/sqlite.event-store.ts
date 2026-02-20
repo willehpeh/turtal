@@ -69,7 +69,7 @@ export class SqliteEventStore extends EventStore {
     if (appendCondition.isEmpty()) {
       return false;
     }
-    const { text, values } = appendCondition.query(this.queryBuilder);
+    const { text, values } = this.queryBuilder.forCondition(appendCondition);
     const events = this.db.prepare(`
         SELECT 1
         FROM events ${text}

@@ -1,3 +1,4 @@
+import { AppendCondition } from '../core/event-store/append-condition';
 import { QueryBuilder } from '../core/event-store/query-builder';
 
 export type SqliteParameterizedQuery = {
@@ -22,6 +23,13 @@ export class SqliteQueryBuilder implements QueryBuilder<SqliteParameterizedQuery
 
   afterPosition(position: number): QueryBuilder<SqliteParameterizedQuery> {
     return new SqliteQueryBuilder(this._types, this._tags, position);
+  }
+
+  forCondition(condition: AppendCondition): SqliteParameterizedQuery {
+    return condition.criteria
+      .appliedTo(this)
+      .afterPosition(condition.after)
+      .build();
   }
 
   build(): SqliteParameterizedQuery {

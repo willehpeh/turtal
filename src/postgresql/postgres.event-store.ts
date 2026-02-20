@@ -51,7 +51,7 @@ export class PostgresEventStore extends EventStore {
     if (appendCondition.isEmpty()) {
       return false;
     }
-    const { text, values } = appendCondition.query(this.queryBuilder) as ParameterizedQuery;
+    const { text, values } = this.queryBuilder.forCondition(appendCondition) as ParameterizedQuery;
     const result = await client.query(
       `SELECT 1 FROM events ${text} LIMIT 1`,
       values

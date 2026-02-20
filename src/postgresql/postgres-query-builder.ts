@@ -1,3 +1,4 @@
+import { AppendCondition } from '../core/event-store/append-condition';
 import { QueryBuilder } from '../core/event-store/query-builder';
 
 export type ParameterizedQuery = {
@@ -22,6 +23,13 @@ export class PostgresQueryBuilder implements QueryBuilder<ParameterizedQuery> {
 
   afterPosition(position: number): QueryBuilder<ParameterizedQuery> {
     return new PostgresQueryBuilder(this._types, this._tags, position);
+  }
+
+  forCondition(condition: AppendCondition): ParameterizedQuery {
+    return condition.criteria
+      .appliedTo(this)
+      .afterPosition(condition.after)
+      .build();
   }
 
   build(): ParameterizedQuery {
