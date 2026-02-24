@@ -49,7 +49,7 @@ export class PostgresEventStore extends EventStore {
 
   async events(criteria = EventCriteria.create()): Promise<SequencedEvent[]> {
     try {
-      const { text, values } = criteria.appliedTo(this.queryBuilder).build() as ParameterizedQuery;
+      const { text, values } = this.queryBuilder.withCriteria(criteria).build() as ParameterizedQuery;
       const result = await this.pool.query(
         `SELECT id, position, type, payload, tags, metadata, timestamp FROM events ${text} ORDER BY position`,
         values
@@ -72,7 +72,7 @@ export class PostgresEventStore extends EventStore {
     if (appendCondition.isEmpty()) {
       return false;
     }
-    const { text, values } = this.queryBuilder.forCondition(appendCondition) as ParameterizedQuery;
+    const { text, values } = this.queryBuilder.withCriteria(appendCondition.criteria).build() as ParameterizedQuery;
     const result = await client.query(
       `SELECT 1 FROM events ${text} LIMIT 1`,
       values

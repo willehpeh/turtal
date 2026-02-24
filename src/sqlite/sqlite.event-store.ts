@@ -61,7 +61,7 @@ export class SqliteEventStore extends EventStore {
   }
 
   private eventDbRows(criteria: EventCriteria): SqliteEvent[] {
-    const { text, values } = criteria.appliedTo(this.queryBuilder).build();
+    const { text, values } = this.queryBuilder.withCriteria(criteria).build();
     //language=SQLite
     return this.db
       .prepare(`
@@ -79,7 +79,7 @@ export class SqliteEventStore extends EventStore {
     if (appendCondition.isEmpty()) {
       return false;
     }
-    const { text, values } = this.queryBuilder.forCondition(appendCondition);
+    const { text, values } = this.queryBuilder.withCriteria(appendCondition.criteria).build();
     const events = this.db.prepare(`
         SELECT 1
         FROM events ${text}

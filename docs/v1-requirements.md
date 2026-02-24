@@ -14,14 +14,6 @@ The [projections design](./projections-design.md) specifies an `afterAppend` cal
 
 ## Should add
 
-### `EventCriteria` cannot express `afterPosition`
-
-Position-based filtering is only available through `AppendCondition`. There is no way to query events after a position, which the projections catch-up design requires and pagination would also need.
-
-### Rename `withOptimisticLock`
-
-The method runs a `SERIALIZABLE` transaction (SSI with predicate locking), not optimistic locking (read version, write with version check). The name actively misleads.
-
 ### SERIALIZABLE isolation is broader than needed
 
 SSI serializes all reads and writes against all concurrent transactions. Two appends with non-overlapping criteria can still cause serialization failures because SSI conservatively flags phantom reads on the shared `events` table. Advisory-lock-based OCC scoped to the criteria would eliminate these false-positive aborts.

@@ -1,4 +1,4 @@
-import { AppendCondition } from '../core/event-store/append-condition';
+import { EventCriteria } from '../core/event-store/event-criteria';
 import { QueryBuilder } from '../core/event-store/query-builder';
 
 export type ParameterizedQuery = {
@@ -13,23 +13,8 @@ export class PostgresQueryBuilder implements QueryBuilder<ParameterizedQuery> {
     private readonly _after: number = 0
   ) {}
 
-  withTypes(types: string[]): QueryBuilder<ParameterizedQuery> {
-    return new PostgresQueryBuilder(types, this._tags, this._after);
-  }
-
-  withTags(tags: string[]): QueryBuilder<ParameterizedQuery> {
-    return new PostgresQueryBuilder(this._types, tags, this._after);
-  }
-
-  afterPosition(position: number): QueryBuilder<ParameterizedQuery> {
-    return new PostgresQueryBuilder(this._types, this._tags, position);
-  }
-
-  forCondition(condition: AppendCondition): ParameterizedQuery {
-    return condition.criteria
-      .appliedTo(this)
-      .afterPosition(condition.after)
-      .build();
+  withCriteria(criteria: EventCriteria): QueryBuilder<ParameterizedQuery> {
+    return new PostgresQueryBuilder(criteria.types(), criteria.tags(), criteria.after());
   }
 
   build(): ParameterizedQuery {

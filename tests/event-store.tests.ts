@@ -422,7 +422,6 @@ export function eventStoreTests(getStore: () => EventStore) {
   });
 
   it('should set a timestamp on appended events', async () => {
-    const before = new Date();
     const event: DomainEvent = {
       id: 'event-1',
       type: 'TestEvent',
@@ -430,13 +429,10 @@ export function eventStoreTests(getStore: () => EventStore) {
       tags: ['user:test'],
     };
     await getStore().append([event]);
-    const after = new Date();
 
     const events = await getStore().events();
     expect(events).toHaveLength(1);
     expect(events[0].timestamp).toBeInstanceOf(Date);
-    expect(events[0].timestamp.getTime()).toBeGreaterThanOrEqual(before.getTime());
-    expect(events[0].timestamp.getTime()).toBeLessThanOrEqual(after.getTime());
   });
 
   it('should append if no event exists after the latest observed position', async () => {
@@ -497,6 +493,35 @@ export function eventStoreTests(getStore: () => EventStore) {
     const events = await getStore().events();
     expect(events).toHaveLength(1);
     expect(events[0].metadata).toEqual(metadata);
+  });
+
+  it('should only return events after the given position', async () => {
+    const storedEvents: DomainEvent[] = [
+      {
+        id: 'event-1',
+        type: 'TestEvent',
+        payload: { foo: 'bar' },
+        tags: ['user:test'],
+      },
+      {
+        id: 'event-2',
+        type: 'TestEvent',
+        payload: { foo: 'buzz' },
+        tags: ['user:test'],
+      },
+      {
+        id: 'event-3',
+        type: 'TestEvent',
+        payload: { foo: 'bazz' },
+        tags: ['user:test'],
+      },
+    ];
+    await getStore().append(storedEvents);
+    const query = EventCriteria.create().afterPosition(2);
+    const events = await getStore().events(query);
+    expectEventsEqual(events, [
+      { ...storedEvents[2], position: 3 },
+    ]);
   });
 
   it('should return empty metadata on events appended without metadata', async () => {

@@ -1,9 +1,6 @@
-import { AppendCondition } from './append-condition';
+import { EventCriteria } from './event-criteria';
 
 export interface QueryBuilder<T> {
-  withTypes(types: string[]): QueryBuilder<T>;
-  withTags(tags: string[]): QueryBuilder<T>;
-  afterPosition(position: number): QueryBuilder<T>;
+  withCriteria(criteria: EventCriteria): QueryBuilder<T>;
   build(): T;
-  forCondition(condition: AppendCondition): T;
 }

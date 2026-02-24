@@ -3,8 +3,7 @@ import { EventCriteria } from './event-criteria';
 export class AppendCondition {
 
   private constructor(
-    readonly criteria: EventCriteria = EventCriteria.create(),
-    readonly after = 0
+    readonly criteria: EventCriteria = EventCriteria.create()
   ) {}
 
   static empty(): AppendCondition {
@@ -18,7 +17,7 @@ export class AppendCondition {
     if (criteria.isEmpty()) {
       return AppendCondition.empty();
     }
-    return new AppendCondition(criteria, after);
+    return new AppendCondition(after > 0 ? criteria.afterPosition(after) : criteria);
   }
 
   isEmpty(): boolean {

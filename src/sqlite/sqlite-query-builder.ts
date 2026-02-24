@@ -1,4 +1,4 @@
-import { AppendCondition } from '../core/event-store/append-condition';
+import { EventCriteria } from '../core/event-store/event-criteria';
 import { QueryBuilder } from '../core/event-store/query-builder';
 
 export type SqliteParameterizedQuery = {
@@ -13,23 +13,8 @@ export class SqliteQueryBuilder implements QueryBuilder<SqliteParameterizedQuery
     private readonly _after: number = 0
   ) {}
 
-  withTypes(types: string[]): QueryBuilder<SqliteParameterizedQuery> {
-    return new SqliteQueryBuilder(types, this._tags, this._after);
-  }
-
-  withTags(tags: string[]): QueryBuilder<SqliteParameterizedQuery> {
-    return new SqliteQueryBuilder(this._types, tags, this._after);
-  }
-
-  afterPosition(position: number): QueryBuilder<SqliteParameterizedQuery> {
-    return new SqliteQueryBuilder(this._types, this._tags, position);
-  }
-
-  forCondition(condition: AppendCondition): SqliteParameterizedQuery {
-    return condition.criteria
-      .appliedTo(this)
-      .afterPosition(condition.after)
-      .build();
+  withCriteria(criteria: EventCriteria): QueryBuilder<SqliteParameterizedQuery> {
+    return new SqliteQueryBuilder(criteria.types(), criteria.tags(), criteria.after());
   }
 
   build(): SqliteParameterizedQuery {
