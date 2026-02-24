@@ -9,15 +9,16 @@ import { PostgresQueryBuilder, type ParameterizedQuery } from './postgres-query-
 import { AppendConditionError } from '../core/event-store/append-condition.error';
 import { POSTGRES_SCHEMA_DEF } from './POSTGRES_SCHEMA_DEF';
 import { PostgresErrorFactory } from './postgres-error-factory';
-
-const MAX_SERIALIZATION_RETRIES = 3;
+import { SerializableTransaction } from './serializable-transaction';
 
 export class PostgresEventStore extends EventStore {
   private readonly queryBuilder = new PostgresQueryBuilder();
   private readonly errorFactory = new PostgresErrorFactory();
+  private readonly transaction: SerializableTransaction;
 
   private constructor(private readonly pool: Pool) {
     super();
+    this.transaction = new SerializableTransaction(pool);
   }
 
   static async create(pool: Pool): Promise<PostgresEventStore> {
@@ -33,7 +34,7 @@ export class PostgresEventStore extends EventStore {
   async append(events: DomainEvent[], options = new AppendOptions()): Promise<void> {
     const { condition, metadata } = options;
     try {
-      await this.withOptimisticLock(async (client) => {
+      await this.transaction.execute(async (client) => {
         if (await this.appendShouldFail(client, condition)) {
           throw new AppendConditionError(condition, events);
         }
@@ -86,31 +87,4 @@ export class PostgresEventStore extends EventStore {
     );
   }
 
-  private isSerializationError(error: unknown): boolean {
-    return error != null
-      && typeof error === 'object'
-      && 'code' in error
-      && (error as Record<string, unknown>).code === '40001';
-  }
-
-  private async withOptimisticLock(fn: (client: PoolClient) => Promise<void>): Promise<void> {
-    const client = await this.pool.connect();
-    try {
-      for (let attempt = 1; attempt <= MAX_SERIALIZATION_RETRIES; attempt++) {
-        try {
-          await client.query('BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE');
-          await fn(client);
-          await client.query('COMMIT');
-          return;
-        } catch (error) {
-          await client.query('ROLLBACK').catch(() => {});
-          if (!this.isSerializationError(error) || attempt === MAX_SERIALIZATION_RETRIES) {
-            throw error;
-          }
-        }
-      }
-    } finally {
-      client.release();
-    }
-  }
 }
