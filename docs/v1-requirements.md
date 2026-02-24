@@ -14,10 +14,6 @@ The [projections design](./projections-design.md) specifies an `afterAppend` cal
 
 ## Should add
 
-### SERIALIZABLE isolation is broader than needed
-
-SSI serializes all reads and writes against all concurrent transactions. Two appends with non-overlapping criteria can still cause serialization failures because SSI conservatively flags phantom reads on the shared `events` table. Advisory-lock-based OCC scoped to the criteria would eliminate these false-positive aborts.
-
 ### Concurrency tests
 
 The test suite is entirely single-threaded. The PostgreSQL SERIALIZABLE behavior is untested.

@@ -19,11 +19,19 @@ export class SerializableTransaction {
           if (!this.isSerializationError(error) || attempt === SerializableTransaction.MAX_RETRIES) {
             throw error;
           }
+          await this.backoff(attempt);
         }
       }
     } finally {
       client.release();
     }
+  }
+
+  private static readonly BASE_DELAY_MS = 25;
+
+  private backoff(attempt: number): Promise<void> {
+    const delay = SerializableTransaction.BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * SerializableTransaction.BASE_DELAY_MS;
+    return new Promise(resolve => setTimeout(resolve, delay));
   }
 
   private isSerializationError(error: unknown): boolean {
