@@ -25,9 +25,8 @@ export class SqliteEventStore extends EventStore {
     return store;
   }
 
-  append(events: DomainEvent[], options: AppendOptions = {}): Promise<void> {
-    const condition = options.condition ?? AppendCondition.empty();
-    const metadata = options.metadata ?? {};
+  append(events: DomainEvent[], options = new AppendOptions()): Promise<void> {
+    const { condition, metadata } = options;
     try {
       this.buildAppendTransaction(condition, events, metadata)();
       return Promise.resolve();

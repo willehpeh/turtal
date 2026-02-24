@@ -30,9 +30,8 @@ export class PostgresEventStore extends EventStore {
     return store;
   }
 
-  async append(events: DomainEvent[], options: AppendOptions = {}): Promise<void> {
-    const condition = options.condition ?? AppendCondition.empty();
-    const metadata = options.metadata ?? {};
+  async append(events: DomainEvent[], options = new AppendOptions()): Promise<void> {
+    const { condition, metadata } = options;
     try {
       await this.withOptimisticLock(async (client) => {
         if (await this.appendShouldFail(client, condition)) {
