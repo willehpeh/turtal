@@ -94,6 +94,26 @@ export function eventStoreTests(getStore: () => EventStore) {
     await expect(getStore().append([shouldFailEvent], { condition: appendCondition })).rejects.toThrowError();
   });
 
+  it('should throw DuplicateEventError when appending an event with an existing ID', async () => {
+    const event: DomainEvent = {
+      id: 'duplicate-id',
+      type: 'TestEvent',
+      payload: { foo: 'bar' },
+      tags: ['user:test'],
+    };
+    await getStore().append([event]);
+    const duplicate: DomainEvent = {
+      id: 'duplicate-id',
+      type: 'TestEvent2',
+      payload: { different: 'data' },
+      tags: [],
+    };
+    await expect(getStore().append([duplicate])).rejects.toMatchObject({
+      name: 'DuplicateEventError',
+      isEventStoreError: true,
+    });
+  });
+
   it('should not fail to append if the event type does not exist', async () => {
     const event: DomainEvent = {
       id: 'event-1',

@@ -1,7 +1,8 @@
 import { AppendCondition } from './append-condition';
 import { DomainEvent } from './domain-event';
+import { EventStoreError } from './event-store.error';
 
-export class AppendConditionError extends Error {
+export class AppendConditionError extends EventStoreError {
   constructor(appendCondition: AppendCondition,
               events: DomainEvent[]) {
     super(`The following events could not be appended:
