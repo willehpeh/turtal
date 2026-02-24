@@ -4,8 +4,12 @@ function sortTags<T extends { tags: string[] }>(event: T): T {
   return { ...event, tags: [...event.tags].sort() };
 }
 
-function expectEventsEqual(actual: SequencedEvent[], expected: SequencedEvent[]) {
-  expect(actual.map(sortTags)).toEqual(expected.map(sortTags));
+function withoutTimestamp({ timestamp, ...rest }: SequencedEvent) {
+  return rest;
+}
+
+function expectEventsEqual(actual: SequencedEvent[], expected: Omit<SequencedEvent, 'timestamp'>[]) {
+  expect(actual.map(withoutTimestamp).map(sortTags)).toEqual(expected.map(sortTags));
 }
 
 export function eventStoreTests(getStore: () => EventStore) {
@@ -58,7 +62,7 @@ export function eventStoreTests(getStore: () => EventStore) {
     await getStore().append(newEvents);
 
     const events = await getStore().events();
-    expect(events).toEqual([
+    expectEventsEqual(events, [
       { ...newEvents[0], position: 1 },
       { ...newEvents[1], position: 2 },
     ]);
@@ -395,6 +399,24 @@ export function eventStoreTests(getStore: () => EventStore) {
       { ...storedEvents[0], position: 1 },
       { ...storedEvents[3], position: 4 },
     ]);
+  });
+
+  it('should set a timestamp on appended events', async () => {
+    const before = new Date();
+    const event: DomainEvent = {
+      id: 'event-1',
+      type: 'TestEvent',
+      payload: { foo: 'bar' },
+      tags: ['user:test'],
+    };
+    await getStore().append([event]);
+    const after = new Date();
+
+    const events = await getStore().events();
+    expect(events).toHaveLength(1);
+    expect(events[0].timestamp).toBeInstanceOf(Date);
+    expect(events[0].timestamp.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    expect(events[0].timestamp.getTime()).toBeLessThanOrEqual(after.getTime());
   });
 
   it('should append if no event exists after the latest observed position', async () => {

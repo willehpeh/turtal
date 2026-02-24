@@ -5,7 +5,8 @@ export const POSTGRES_SCHEMA_DEF = `
         position BIGSERIAL PRIMARY KEY,
         type     TEXT      NOT NULL,
         payload  JSONB     NOT NULL,
-        tags     TEXT[]    NOT NULL DEFAULT '{}'
+        tags     TEXT[]    NOT NULL DEFAULT '{}',
+        timestamp TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS idx_events_type ON events (type);
     CREATE INDEX IF NOT EXISTS idx_events_tags ON events USING GIN (tags);

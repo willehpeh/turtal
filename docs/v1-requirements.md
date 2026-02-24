@@ -4,27 +4,7 @@ Single-instance, single-process. Projections (live and persistent) tracked separ
 
 ---
 
-## Must fix
-
-### 1. SQL injection in SQLite query builder
-
-`SqliteQueryBuilder` interpolates tag values directly into SQL strings via template literals. The PostgreSQL implementation correctly uses parameterized queries. This must be fixed before any use with user-influenced tags.
-
-**File:** `src/sqlite/sqlite-query-builder.ts`
-
-### 2. Missing public exports
-
-`EventCriteria`, `AppendCondition`, `DomainEvent`, `SequencedEvent`, and `AppendConditionError` are not exported from `index.ts`. Users cannot construct queries or conditions without reaching into internal paths.
-
-**File:** `src/index.ts`
-
----
-
 ## Must add
-
-### 3. Timestamps on events
-
-`DomainEvent` has no `timestamp` field. Required for debugging, auditing, and operational visibility. Should be set server-side (by the store on append, not by the caller) to guarantee monotonicity relative to position.
 
 ### 4. Pagination / streaming for `events()`
 
