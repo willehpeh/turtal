@@ -12,14 +12,6 @@ The [projections design](./projections-design.md) specifies an `afterAppend` cal
 
 ---
 
-## Should add
-
-### Concurrency tests
-
-The test suite is entirely single-threaded. The PostgreSQL SERIALIZABLE behavior is untested.
-
----
-
 ## Nice to have
 
 ### Event validation on append
