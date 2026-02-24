@@ -14,10 +14,6 @@ The [projections design](./projections-design.md) specifies an `afterAppend` cal
 
 ## Should add
 
-### Error wrapping
-
-Database-specific errors (constraint violations, connection failures, serialization errors) currently propagate raw. Wrapping them in turtal-specific error types (e.g., `ConnectionError`, `SerializationError`) decouples users from `pg` and `better-sqlite3` internals.
-
 ### `EventCriteria` cannot express `afterPosition`
 
 Position-based filtering is only available through `AppendCondition`. There is no way to query events after a position, which the projections catch-up design requires and pagination would also need.
