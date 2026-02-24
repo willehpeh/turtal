@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { PostgresEventStore } from '../../src';
+import { AppendCondition, AppendOptions, EventCriteria, PostgresEventStore } from '../../src';
 import { eventStoreTests } from '../event-store.tests';
 
 describe('PostgreSQL Event Store', () => {
@@ -29,8 +29,6 @@ describe('PostgreSQL Event Store', () => {
     const event1 = { id: 'e1', type: 'TestEvent', payload: {}, tags: ['stream:1'] };
     const event2 = { id: 'e2', type: 'TestEvent', payload: {}, tags: ['stream:1'] };
 
-    // Two concurrent appends with overlapping conditions force a serialization conflict.
-    // One will succeed immediately; the other will hit a 40001 and retry.
     await Promise.all([
       store.append([event1]),
       store.append([event2]),
@@ -38,5 +36,27 @@ describe('PostgreSQL Event Store', () => {
 
     const events = await store.events();
     expect(events).toHaveLength(2);
+  });
+
+  it('should allow exactly one append when concurrent appends have the same condition', async () => {
+    const criteria = EventCriteria.create().forTypes('UniqueEvent');
+    const condition = AppendCondition.forCriteria(criteria);
+
+    const results = await Promise.allSettled(
+      Array.from({ length: 10 }, (_, i) =>
+        store.append(
+          [{ id: `event-${i}`, type: 'UniqueEvent', payload: {}, tags: [] }],
+          new AppendOptions({ condition })
+        )
+      )
+    );
+
+    const fulfilled = results.filter(r => r.status === 'fulfilled');
+    const rejected = results.filter(r => r.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(9);
+
+    const events = await store.events();
+    expect(events).toHaveLength(1);
   });
 });
