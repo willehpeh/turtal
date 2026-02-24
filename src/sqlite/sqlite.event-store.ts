@@ -31,7 +31,7 @@ export class SqliteEventStore extends EventStore {
     }
   }
 
-  events(criteria = new EventCriteria()): Promise<SequencedEvent[]> {
+  events(criteria = EventCriteria.create()): Promise<SequencedEvent[]> {
     return Promise.resolve(
       this.eventDbRows(criteria).map((row) => ({
         ...row,

@@ -32,7 +32,7 @@ export class PostgresEventStore extends EventStore {
     });
   }
 
-  async events(criteria = new EventCriteria()): Promise<SequencedEvent[]> {
+  async events(criteria = EventCriteria.create()): Promise<SequencedEvent[]> {
     const { text, values } = criteria.appliedTo(this.queryBuilder).build() as ParameterizedQuery;
     const result = await this.pool.query(
       `SELECT id, position, type, payload, tags FROM events ${text} ORDER BY position`,

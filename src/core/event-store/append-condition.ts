@@ -3,7 +3,7 @@ import { EventCriteria } from './event-criteria';
 export class AppendCondition {
 
   private constructor(
-    readonly criteria: EventCriteria = new EventCriteria(),
+    readonly criteria: EventCriteria = EventCriteria.create(),
     readonly after = 0
   ) {}
 

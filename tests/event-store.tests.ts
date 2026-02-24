@@ -86,7 +86,7 @@ export function eventStoreTests(getStore: () => EventStore) {
         'user:test',
       ]
     };
-    const appendCondition = AppendCondition.forCriteria(new EventCriteria().forTypes('TestEvent'))
+    const appendCondition = AppendCondition.forCriteria(EventCriteria.create().forTypes('TestEvent'))
     await expect(getStore().append([shouldFailEvent], appendCondition)).rejects.toThrowError();
   });
 
@@ -101,7 +101,7 @@ export function eventStoreTests(getStore: () => EventStore) {
         'user:test',
       ]
     };
-    const appendCondition = AppendCondition.forCriteria(new EventCriteria().forTypes('TestEventDoesNotExist'))
+    const appendCondition = AppendCondition.forCriteria(EventCriteria.create().forTypes('TestEventDoesNotExist'))
     await expect(getStore().append([event], appendCondition)).resolves.not.toThrowError();
   });
 
@@ -125,7 +125,7 @@ export function eventStoreTests(getStore: () => EventStore) {
       },
       tags: []
     };
-    const appendCondition = AppendCondition.forCriteria(new EventCriteria().forTypes('RandomTestEvent', 'TestEvent'))
+    const appendCondition = AppendCondition.forCriteria(EventCriteria.create().forTypes('RandomTestEvent', 'TestEvent'))
     await expect(getStore().append([event, shouldFailEvent], appendCondition)).rejects.toThrowError();
   });
 
@@ -153,7 +153,7 @@ export function eventStoreTests(getStore: () => EventStore) {
         'test:456',
       ]
     };
-    const appendCondition = AppendCondition.forCriteria(new EventCriteria().forTags('test:123', 'user:test'));
+    const appendCondition = AppendCondition.forCriteria(EventCriteria.create().forTags('test:123', 'user:test'));
     await expect(getStore().append([newEvent], appendCondition)).rejects.toThrowError();
   });
 
@@ -181,7 +181,7 @@ export function eventStoreTests(getStore: () => EventStore) {
         'test:456',
       ]
     };
-    const appendCondition = AppendCondition.forCriteria(new EventCriteria().forTags('test:123', 'other-test-456'));
+    const appendCondition = AppendCondition.forCriteria(EventCriteria.create().forTags('test:123', 'other-test-456'));
     await getStore().append([newEvent], appendCondition);
     const events = await getStore().events();
     expectEventsEqual(events, [
@@ -211,7 +211,7 @@ export function eventStoreTests(getStore: () => EventStore) {
       },
       tags: []
     };
-    const appendCondition = AppendCondition.forCriteria(new EventCriteria()
+    const appendCondition = AppendCondition.forCriteria(EventCriteria.create()
       .forTags('user:test', 'test:123')
       .forTypes('NotTestEvent')
     );
@@ -244,7 +244,7 @@ export function eventStoreTests(getStore: () => EventStore) {
       },
       tags: []
     };
-    const appendCondition = AppendCondition.forCriteria(new EventCriteria()
+    const appendCondition = AppendCondition.forCriteria(EventCriteria.create()
       .forTags('user:test', 'test:123')
       .forTypes('TestEvent', 'RandomEvent')
     );
@@ -293,7 +293,7 @@ export function eventStoreTests(getStore: () => EventStore) {
       }
     ];
     await getStore().append(storedEvents);
-    const query = new EventCriteria().forTypes('TestEvent', 'TestEvent3');
+    const query = EventCriteria.create().forTypes('TestEvent', 'TestEvent3');
     const events = await getStore().events(query);
     expectEventsEqual(events, [
       { ...storedEvents[0], position: 1 },
@@ -336,7 +336,7 @@ export function eventStoreTests(getStore: () => EventStore) {
       }
     ];
     await getStore().append(storedEvents);
-    const query = new EventCriteria().forTags('user:test');
+    const query = EventCriteria.create().forTags('user:test');
     const events = await getStore().events(query);
     expectEventsEqual(events, [
       { ...storedEvents[0], position: 1 },
@@ -389,7 +389,7 @@ export function eventStoreTests(getStore: () => EventStore) {
       }
     ];
     await getStore().append(storedEvents);
-    const query = new EventCriteria().forTypes('TestEvent').forTags('user:test', 'test:123');
+    const query = EventCriteria.create().forTypes('TestEvent').forTags('user:test', 'test:123');
     const events = await getStore().events(query);
     expectEventsEqual(events, [
       { ...storedEvents[0], position: 1 },
@@ -423,7 +423,7 @@ export function eventStoreTests(getStore: () => EventStore) {
       },
     ];
     await getStore().append(storedEvents);
-    const query = new EventCriteria().forTypes('TestEvent').forTags('user:test');
+    const query = EventCriteria.create().forTypes('TestEvent').forTags('user:test');
     const appendCondition = AppendCondition.forCriteria(query, 2);
     const newEvent: DomainEvent = {
       id: 'event-3',

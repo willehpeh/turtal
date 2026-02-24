@@ -22,9 +22,9 @@ The test suite is entirely single-threaded. The PostgreSQL SERIALIZABLE behavior
 
 ## Design debt
 
-### 7. `EventCriteria` is mutable but looks immutable
+### 7. ~~`EventCriteria` is mutable but looks immutable~~ (resolved)
 
-The fluent API suggests immutability, but `forTypes` and `forTags` mutate the instance. The `QueryBuilder` implementations correctly return new instances. `EventCriteria` should follow the same pattern.
+`EventCriteria` now uses a private constructor with `readonly` fields. `forTypes` and `forTags` return new instances, matching the `QueryBuilder` pattern. Construction uses `EventCriteria.create()`.
 
 ### 8. `EventCriteria` cannot express `afterPosition`
 
