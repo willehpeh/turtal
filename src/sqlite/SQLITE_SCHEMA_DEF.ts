@@ -6,6 +6,7 @@ export const SQLITE_SCHEMA_DEF = `
         position INTEGER PRIMARY KEY AUTOINCREMENT,
         type     TEXT NOT NULL,
         payload  JSON NOT NULL,
+        metadata JSON NOT NULL DEFAULT '{}',
         timestamp TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
     CREATE INDEX IF NOT EXISTS idx_events_type ON events (type);

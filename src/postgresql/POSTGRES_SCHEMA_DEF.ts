@@ -6,6 +6,7 @@ export const POSTGRES_SCHEMA_DEF = `
         type     TEXT      NOT NULL,
         payload  JSONB     NOT NULL,
         tags     TEXT[]    NOT NULL DEFAULT '{}',
+        metadata JSONB     NOT NULL DEFAULT '{}',
         timestamp TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS idx_events_type ON events (type);

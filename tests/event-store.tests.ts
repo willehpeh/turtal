@@ -4,12 +4,12 @@ function sortTags<T extends { tags: string[] }>(event: T): T {
   return { ...event, tags: [...event.tags].sort() };
 }
 
-function withoutTimestamp({ timestamp, ...rest }: SequencedEvent) {
+function withoutGenerated({ timestamp, metadata, ...rest }: SequencedEvent) {
   return rest;
 }
 
-function expectEventsEqual(actual: SequencedEvent[], expected: Omit<SequencedEvent, 'timestamp'>[]) {
-  expect(actual.map(withoutTimestamp).map(sortTags)).toEqual(expected.map(sortTags));
+function expectEventsEqual(actual: SequencedEvent[], expected: Omit<SequencedEvent, 'timestamp' | 'metadata'>[]) {
+  expect(actual.map(withoutGenerated).map(sortTags)).toEqual(expected.map(sortTags));
 }
 
 export function eventStoreTests(getStore: () => EventStore) {
@@ -91,7 +91,7 @@ export function eventStoreTests(getStore: () => EventStore) {
       ]
     };
     const appendCondition = AppendCondition.forCriteria(EventCriteria.create().forTypes('TestEvent'))
-    await expect(getStore().append([shouldFailEvent], appendCondition)).rejects.toThrowError();
+    await expect(getStore().append([shouldFailEvent], { condition: appendCondition })).rejects.toThrowError();
   });
 
   it('should not fail to append if the event type does not exist', async () => {
@@ -106,7 +106,7 @@ export function eventStoreTests(getStore: () => EventStore) {
       ]
     };
     const appendCondition = AppendCondition.forCriteria(EventCriteria.create().forTypes('TestEventDoesNotExist'))
-    await expect(getStore().append([event], appendCondition)).resolves.not.toThrowError();
+    await expect(getStore().append([event], { condition: appendCondition })).resolves.not.toThrowError();
   });
 
   it('should fail to append if at least one event type matches', async () => {
@@ -130,7 +130,7 @@ export function eventStoreTests(getStore: () => EventStore) {
       tags: []
     };
     const appendCondition = AppendCondition.forCriteria(EventCriteria.create().forTypes('RandomTestEvent', 'TestEvent'))
-    await expect(getStore().append([event, shouldFailEvent], appendCondition)).rejects.toThrowError();
+    await expect(getStore().append([event, shouldFailEvent], { condition: appendCondition })).rejects.toThrowError();
   });
 
   it('should fail to append if there is at least one event with ALL OF the provided tags and no position provided', async () => {
@@ -158,7 +158,7 @@ export function eventStoreTests(getStore: () => EventStore) {
       ]
     };
     const appendCondition = AppendCondition.forCriteria(EventCriteria.create().forTags('test:123', 'user:test'));
-    await expect(getStore().append([newEvent], appendCondition)).rejects.toThrowError();
+    await expect(getStore().append([newEvent], { condition: appendCondition })).rejects.toThrowError();
   });
 
   it('should append if events exist with some but not all of the provided tags', async () => {
@@ -186,7 +186,7 @@ export function eventStoreTests(getStore: () => EventStore) {
       ]
     };
     const appendCondition = AppendCondition.forCriteria(EventCriteria.create().forTags('test:123', 'other-test-456'));
-    await getStore().append([newEvent], appendCondition);
+    await getStore().append([newEvent], { condition: appendCondition });
     const events = await getStore().events();
     expectEventsEqual(events, [
       { ...event, position: 1 },
@@ -219,7 +219,7 @@ export function eventStoreTests(getStore: () => EventStore) {
       .forTags('user:test', 'test:123')
       .forTypes('NotTestEvent')
     );
-    await getStore().append([newEvent], appendCondition);
+    await getStore().append([newEvent], { condition: appendCondition });
     const events = await getStore().events();
     expectEventsEqual(events, [
       { ...event, position: 1 },
@@ -252,7 +252,7 @@ export function eventStoreTests(getStore: () => EventStore) {
       .forTags('user:test', 'test:123')
       .forTypes('TestEvent', 'RandomEvent')
     );
-    await expect(getStore().append([newEvent], appendCondition)).rejects.toThrowError();
+    await expect(getStore().append([newEvent], { condition: appendCondition })).rejects.toThrowError();
   });
 
   it('should only return events that match the types in the query', async () => {
@@ -455,12 +455,41 @@ export function eventStoreTests(getStore: () => EventStore) {
       },
       tags: []
     };
-    await getStore().append([newEvent], appendCondition);
+    await getStore().append([newEvent], { condition: appendCondition });
     const events = await getStore().events();
     expectEventsEqual(events, [
       { ...storedEvents[0], position: 1 },
       { ...storedEvents[1], position: 2 },
       { ...newEvent, position: 3 },
     ])
+  });
+
+  it('should return metadata on events appended with metadata', async () => {
+    const event: DomainEvent = {
+      id: 'event-1',
+      type: 'TestEvent',
+      payload: { foo: 'bar' },
+      tags: ['user:test'],
+    };
+    const metadata = { correlationId: 'corr-1', causationId: 'cause-1', userId: 'user-42' };
+    await getStore().append([event], { metadata });
+
+    const events = await getStore().events();
+    expect(events).toHaveLength(1);
+    expect(events[0].metadata).toEqual(metadata);
+  });
+
+  it('should return empty metadata on events appended without metadata', async () => {
+    const event: DomainEvent = {
+      id: 'event-1',
+      type: 'TestEvent',
+      payload: { foo: 'bar' },
+      tags: ['user:test'],
+    };
+    await getStore().append([event]);
+
+    const events = await getStore().events();
+    expect(events).toHaveLength(1);
+    expect(events[0].metadata).toEqual({});
   });
 }

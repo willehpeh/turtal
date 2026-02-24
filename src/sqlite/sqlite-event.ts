@@ -4,5 +4,6 @@ export type SqliteEvent = {
   type: string;
   payload: string;
   tags: string;
+  metadata: string;
   timestamp: string;
 };

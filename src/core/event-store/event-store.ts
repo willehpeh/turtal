@@ -1,9 +1,9 @@
 import { SequencedEvent } from './sequenced-event';
 import { EventCriteria } from './event-criteria';
-import { AppendCondition } from './append-condition';
 import { DomainEvent } from './domain-event';
+import { AppendOptions } from './append-options';
 
 export abstract class EventStore {
   abstract events(criteria?: EventCriteria): Promise<SequencedEvent[]>;
-  abstract append(events: DomainEvent[], appendCondition?: AppendCondition): Promise<void>;
+  abstract append(events: DomainEvent[], options?: AppendOptions): Promise<void>;
 }

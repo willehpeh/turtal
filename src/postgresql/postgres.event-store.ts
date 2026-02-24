@@ -1,12 +1,20 @@
 import type { Pool, PoolClient } from 'pg';
+import { DatabaseError } from 'pg-protocol';
 import { EventStore } from '../core/event-store/event-store';
 import { AppendCondition } from '../core/event-store/append-condition';
+import { AppendOptions } from '../core/event-store/append-options';
 import { EventCriteria } from '../core/event-store/event-criteria';
 import { SequencedEvent } from '../core/event-store/sequenced-event';
 import { DomainEvent } from '../core/event-store/domain-event';
 import { PostgresQueryBuilder, type ParameterizedQuery } from './postgres-query-builder';
 import { AppendConditionError } from '../core/event-store/append-condition.error';
 import { POSTGRES_SCHEMA_DEF } from './POSTGRES_SCHEMA_DEF';
+
+const MAX_SERIALIZATION_RETRIES = 3;
+
+function isSerializationError(error: unknown): boolean {
+  return error instanceof DatabaseError && error.code === '40001';
+}
 
 export class PostgresEventStore extends EventStore {
   private readonly queryBuilder = new PostgresQueryBuilder();
@@ -21,13 +29,15 @@ export class PostgresEventStore extends EventStore {
     return store;
   }
 
-  async append(events: DomainEvent[], appendCondition: AppendCondition = AppendCondition.empty()): Promise<void> {
+  async append(events: DomainEvent[], options: AppendOptions = {}): Promise<void> {
+    const condition = options.condition ?? AppendCondition.empty();
+    const metadata = options.metadata ?? {};
     await this.withOptimisticLock(async (client) => {
-      if (await this.appendShouldFail(client, appendCondition)) {
-        throw new AppendConditionError(appendCondition, events);
+      if (await this.appendShouldFail(client, condition)) {
+        throw new AppendConditionError(condition, events);
       }
       for (const event of events) {
-        await this.insertEvent(client, event);
+        await this.insertEvent(client, event, metadata);
       }
     });
   }
@@ -35,7 +45,7 @@ export class PostgresEventStore extends EventStore {
   async events(criteria = EventCriteria.create()): Promise<SequencedEvent[]> {
     const { text, values } = criteria.appliedTo(this.queryBuilder).build() as ParameterizedQuery;
     const result = await this.pool.query(
-      `SELECT id, position, type, payload, tags, timestamp FROM events ${text} ORDER BY position`,
+      `SELECT id, position, type, payload, tags, metadata, timestamp FROM events ${text} ORDER BY position`,
       values
     );
     return result.rows.map((row) => ({
@@ -44,6 +54,7 @@ export class PostgresEventStore extends EventStore {
       type: row.type,
       payload: row.payload,
       tags: row.tags,
+      metadata: row.metadata,
       timestamp: new Date(row.timestamp),
     }));
   }
@@ -60,22 +71,29 @@ export class PostgresEventStore extends EventStore {
     return result.rowCount !== null && result.rowCount > 0;
   }
 
-  private async insertEvent(client: PoolClient, event: DomainEvent): Promise<void> {
+  private async insertEvent(client: PoolClient, event: DomainEvent, metadata: Record<string, string>): Promise<void> {
     await client.query(
-      'INSERT INTO events (id, type, payload, tags) VALUES ($1, $2, $3, $4)',
-      [event.id, event.type, JSON.stringify(event.payload), event.tags]
+      'INSERT INTO events (id, type, payload, tags, metadata) VALUES ($1, $2, $3, $4, $5)',
+      [event.id, event.type, JSON.stringify(event.payload), event.tags, JSON.stringify(metadata)]
     );
   }
 
   private async withOptimisticLock(fn: (client: PoolClient) => Promise<void>): Promise<void> {
     const client = await this.pool.connect();
     try {
-      await client.query('BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE');
-      await fn(client);
-      await client.query('COMMIT');
-    } catch (error) {
-      await client.query('ROLLBACK').catch(() => {});
-      throw error;
+      for (let attempt = 1; attempt <= MAX_SERIALIZATION_RETRIES; attempt++) {
+        try {
+          await client.query('BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE');
+          await fn(client);
+          await client.query('COMMIT');
+          return;
+        } catch (error) {
+          await client.query('ROLLBACK').catch(() => {});
+          if (!isSerializationError(error) || attempt === MAX_SERIALIZATION_RETRIES) {
+            throw error;
+          }
+        }
+      }
     } finally {
       client.release();
     }
