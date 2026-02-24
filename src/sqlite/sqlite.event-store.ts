@@ -36,7 +36,7 @@ export class SqliteEventStore extends EventStore {
       this.eventDbRows(criteria).map((row) => ({
         ...row,
         payload: JSON.parse(row.payload),
-        tags: row.tags ? row.tags.split(',') : [],
+        tags: (JSON.parse(row.tags) as (string | null)[]).filter((t): t is string => t !== null),
       }))
     );
   }
@@ -55,7 +55,7 @@ export class SqliteEventStore extends EventStore {
     //language=SQLite
     return this.db
       .prepare(`
-          SELECT events.id, events.position, events.type, events.payload, GROUP_CONCAT(t.tag) as tags
+          SELECT events.id, events.position, events.type, events.payload, JSON_GROUP_ARRAY(t.tag) as tags
           FROM events
                    LEFT JOIN event_tags t ON events.position = t.event_position
               ${text}

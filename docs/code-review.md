@@ -1,17 +1,5 @@
 # Code Review
 
-## Current bugs
-
-### 1. SQLite tags corrupt on commas
-
-`sqlite.event-store.ts` joins tags via `GROUP_CONCAT` and splits them back with `.split(',')`. Any tag containing a comma round-trips incorrectly. PostgreSQL's `TEXT[]` column does not have this problem, so the two backends have silently different behavior.
-
-### 2. Shared test "multiple events" assertion is a tautology
-
-`event-store.tests.ts:65` asserts `events[0]` equals `{ ...events[0], position: 1 }` — it spreads retrieved events back into themselves rather than comparing against the original input `newEvents`.
-
----
-
 ## PostgreSQL concurrency
 
 ### 3. No retry on SERIALIZABLE 40001

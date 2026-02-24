@@ -1,8 +1,4 @@
-import { EventStore } from '../src';
-import { DomainEvent } from '../src/core/event-store/domain-event';
-import { AppendCondition } from '../src/core/event-store/append-condition';
-import { EventCriteria } from '../src/core/event-store/event-criteria';
-import { SequencedEvent } from '../src/core/event-store/sequenced-event';
+import { AppendCondition, DomainEvent, EventCriteria, EventStore, SequencedEvent } from '../src';
 
 function sortTags<T extends { tags: string[] }>(event: T): T {
   return { ...event, tags: [...event.tags].sort() };
@@ -63,8 +59,8 @@ export function eventStoreTests(getStore: () => EventStore) {
 
     const events = await getStore().events();
     expect(events).toEqual([
-      { ...events[0], position: 1 },
-      { ...events[1], position: 2 },
+      { ...newEvents[0], position: 1 },
+      { ...newEvents[1], position: 2 },
     ]);
   });
 
