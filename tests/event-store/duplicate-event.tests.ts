@@ -1,24 +1,13 @@
-import { DomainEvent, EventStore } from '../../src';
+import { EventStore } from '../../src';
+import { buildEvent } from './helpers';
 
 export function duplicateEventTests(getStore: () => EventStore) {
   it('should throw DuplicateEventError when appending an event with an existing ID', async () => {
-    const event: DomainEvent = {
-      id: 'duplicate-id',
-      type: 'TestEvent',
-      payload: { foo: 'bar' },
-      tags: ['user:test'],
-    };
-    await getStore().append([event]);
-    const duplicate: DomainEvent = {
-      id: 'duplicate-id',
-      type: 'TestEvent2',
-      payload: { different: 'data' },
-      tags: [],
-    };
+    await getStore().append([buildEvent('duplicate-id')]);
     const expectedError = {
       name: 'DuplicateEventError',
       isEventStoreError: true,
     };
-    await expect(getStore().append([duplicate])).rejects.toMatchObject(expectedError);
+    await expect(getStore().append([buildEvent('duplicate-id', { type: 'TestEvent2' })])).rejects.toMatchObject(expectedError);
   });
 }

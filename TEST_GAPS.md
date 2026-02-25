@@ -30,5 +30,4 @@
 
 ## Structure / Readability
 
-- Heavy duplication in event construction; a `buildEvent(overrides)` factory would reduce noise.
 - Misleading test name on line 71: "should fail to append if the event type already exists" reads like a uniqueness constraint on `type`, but it's actually about `AppendCondition` matching.
