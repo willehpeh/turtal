@@ -80,7 +80,7 @@ export function appendConditionTests(getStore: () => EventStore) {
       isEventStoreError: true,
     };
     const appendOp = () => getStore().append(
-      [event, shouldFailEvent],
+      [shouldFailEvent],
       new AppendOptions({ condition: appendCondition })
     );
     await expect(appendOp()).rejects.toMatchObject(expectedError);
