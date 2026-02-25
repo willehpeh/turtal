@@ -2,7 +2,7 @@ import { AppendCondition, AppendOptions, DomainEvent, EventCriteria, EventStore 
 import { buildEvent, expectEventsEqual } from './helpers';
 
 export function appendConditionTests(getStore: () => EventStore) {
-  it('should fail to append if the event type already exists', async () => {
+  it('should fail to append when an append condition matches an existing event type', async () => {
     await getStore().append([buildEvent('event-1')]);
     const appendCondition = AppendCondition.forCriteria(
       EventCriteria.create().forTypes('TestEvent')

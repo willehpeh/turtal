@@ -20,4 +20,29 @@ export function metadataTests(getStore: () => EventStore) {
     expect(events).toHaveLength(1);
     expect(events[0].metadata).toEqual({});
   });
+
+  it('should not leak metadata across separate append calls', async () => {
+    const metadata = { correlationId: 'corr-1' };
+    await getStore().append([buildEvent('event-1')], new AppendOptions({ metadata }));
+    await getStore().append([buildEvent('event-2')]);
+
+    const events = await getStore().events();
+    expect(events).toHaveLength(2);
+    expect(events[0].metadata).toEqual(metadata);
+    expect(events[1].metadata).toEqual({});
+  });
+
+  it('should apply the same metadata to all events in a single append call', async () => {
+    const metadata = { correlationId: 'corr-1', causationId: 'cause-1' };
+    await getStore().append(
+      [buildEvent('event-1'), buildEvent('event-2'), buildEvent('event-3')],
+      new AppendOptions({ metadata }),
+    );
+
+    const events = await getStore().events();
+    expect(events).toHaveLength(3);
+    for (const event of events) {
+      expect(event.metadata).toEqual(metadata);
+    }
+  });
 }

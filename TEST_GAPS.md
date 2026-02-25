@@ -18,16 +18,7 @@
 - `afterPosition(0)` should return everything.
 - `afterPosition` combined with type and/or tag filters.
 
-## Metadata
-
-- No test that metadata is per-append-call (not leaked across separate calls).
-- No test that all events in a single `append()` batch receive the same metadata.
-
 ## Concurrency (PostgreSQL)
 
 - "retry on serialization failure" test (line 28) is non-deterministic — two concurrent appends may not actually conflict, so the retry path may never execute.
 - No test for retry exhaustion (all `MAX_RETRIES` attempts fail with serialization errors).
-
-## Structure / Readability
-
-- Misleading test name on line 71: "should fail to append if the event type already exists" reads like a uniqueness constraint on `type`, but it's actually about `AppendCondition` matching.
