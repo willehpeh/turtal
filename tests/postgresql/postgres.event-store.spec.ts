@@ -25,7 +25,7 @@ describe('PostgreSQL Event Store', () => {
 
   eventStoreTests(() => store);
 
-  it('should retry on serialization failure', async () => {
+  it('should handle concurrent appends without data loss', async () => {
     const event1 = { id: 'e1', type: 'TestEvent', payload: {}, tags: ['stream:1'] };
     const event2 = { id: 'e2', type: 'TestEvent', payload: {}, tags: ['stream:1'] };
 

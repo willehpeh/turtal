@@ -1,9 +1,5 @@
 # Test Gaps
 
-## AppendCondition
-
-- Line 153: appends `event` (id `event-1`) which was already inserted on line 143. This likely throws `DuplicateEventError` before the condition is even checked. Test passes because _some_ error is thrown, but it's testing the wrong thing.
-
 ## Unit Tests (missing entirely)
 
 - **EventCriteria** — `isEmpty()`, immutability (chaining returns new instances), `afterPosition(0)` behavior.
@@ -34,6 +30,5 @@
 
 ## Structure / Readability
 
-- No `describe` blocks in the shared suite — 20+ flat `it()` calls.
 - Heavy duplication in event construction; a `buildEvent(overrides)` factory would reduce noise.
 - Misleading test name on line 71: "should fail to append if the event type already exists" reads like a uniqueness constraint on `type`, but it's actually about `AppendCondition` matching.
