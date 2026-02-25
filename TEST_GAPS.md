@@ -1,12 +1,7 @@
 # Test Gaps
 
-## Resolved
-
-- **AppendCondition error type assertions** — failure tests now assert `AppendConditionError` by name instead of generic `toThrowError()`.
-
 ## AppendCondition
 
-- No test where events exist _after_ a given position, causing the condition to fail. Only the passing case (line 438) is tested.
 - Line 153: appends `event` (id `event-1`) which was already inserted on line 143. This likely throws `DuplicateEventError` before the condition is even checked. Test passes because _some_ error is thrown, but it's testing the wrong thing.
 
 ## Unit Tests (missing entirely)

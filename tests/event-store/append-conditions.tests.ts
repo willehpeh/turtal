@@ -265,4 +265,39 @@ export function appendConditionTests(getStore: () => EventStore) {
       { ...newEvent, position: 3 },
     ])
   });
+
+  it('should fail to append if an event exists after the latest observed position', async () => {
+    const storedEvents: DomainEvent[] = [
+      {
+        id: 'event-1',
+        type: 'TestEvent',
+        payload: { foo: 'bar' },
+        tags: ['user:test'],
+      },
+      {
+        id: 'event-2',
+        type: 'TestEvent',
+        payload: { foo: 'buzz' },
+        tags: ['user:test'],
+      },
+    ];
+    await getStore().append(storedEvents);
+    const query = EventCriteria.create().forTypes('TestEvent').forTags('user:test');
+    const appendCondition = AppendCondition.forCriteria(query, 1);
+    const newEvent: DomainEvent = {
+      id: 'event-3',
+      type: 'TestEvent',
+      payload: { buzz: 'bizz' },
+      tags: [],
+    };
+    const expectedError = {
+      name: 'AppendConditionError',
+      isEventStoreError: true,
+    };
+    const appendOp = () => getStore().append(
+      [newEvent],
+      new AppendOptions({ condition: appendCondition }),
+    );
+    await expect(appendOp()).rejects.toMatchObject(expectedError);
+  });
 }
